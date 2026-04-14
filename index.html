@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pipeline Mastersheet</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0e13;--s1:#131720;--s2:#1b2030;--s3:#252b3d;--bd:#2d3450;--tx:#e6eaf2;--t2:#7d89a6;--ac:#5b8def;--a2:#3d6fd9;--gn:#34d399;--am:#fbbf24;--rd:#f87171;--font:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--tx);font-family:var(--font);}
+
+.np-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;}
+.np-card{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:36px;max-width:400px;width:90%;text-align:center;}
+.np-icon{font-size:52px;margin-bottom:14px;}
+.np-card h2{font-size:24px;font-weight:800;margin-bottom:6px;}
+.np-card p{font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:16px;}
+.np-input{width:100%;padding:14px 16px;border-radius:10px;border:2px solid var(--bd);background:var(--bg);color:var(--tx);font-family:var(--font);font-size:17px;text-align:center;outline:none;margin-bottom:14px;}
+.np-input:focus{border-color:var(--ac);}
+.np-input::placeholder{color:#4a5270;}
+.np-btn{width:100%;padding:14px;border-radius:10px;border:none;background:var(--a2);color:white;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;transition:.15s;}
+.np-btn:hover:not(:disabled){background:var(--ac);}
+.np-btn:disabled{opacity:.35;cursor:default;}
+.np-hint{font-size:11px;color:var(--t2);margin-top:14px;}
+
+.app{padding:14px 16px;max-width:100%;}
+.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+.hd-l{display:flex;align-items:center;gap:10px;}
+.hd-l h1{font-size:20px;font-weight:800;letter-spacing:-.5px;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--gn);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.dot-text{font-size:11px;color:var(--gn);font-weight:600;}
+.hd-r{display:flex;align-items:center;gap:10px;}
+.ubadge{background:var(--s2);border:1px solid var(--bd);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;}
+.svtime{font-size:10px;color:var(--t2);}
+.rbtn{padding:5px 12px;border-radius:6px;border:1px solid var(--bd);background:var(--s2);color:var(--t2);font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;}
+.rbtn:hover{color:var(--tx);border-color:var(--ac);}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px;margin-bottom:12px;}
+.stat{background:var(--s1);border:1px solid var(--bd);border-radius:8px;padding:10px 13px;}
+.stat .lb{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
+.stat .vl{font-size:20px;font-weight:800;font-family:var(--mono);margin-top:2px;}
+.stat .sb{font-size:10px;color:var(--t2);}
+
+.bar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
+.pill{padding:5px 13px;border-radius:16px;border:1px solid var(--bd);background:transparent;color:var(--t2);font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;transition:.15s;}
+.pill.on{background:var(--a2);border-color:var(--a2);color:white;}
+.pill:hover:not(.on){border-color:var(--t2);color:var(--tx);}
+.pill.grn{border-color:var(--gn);color:var(--gn);}
+.pill.grn:hover{background:var(--gn);color:var(--bg);}
+.divider{width:1px;height:20px;background:var(--bd);margin:0 4px;}
+.sbox{flex:1;min-width:160px;padding:6px 12px;border-radius:6px;border:1px solid var(--bd);background:var(--s1);color:var(--tx);font-family:var(--font);font-size:12px;outline:none;}
+.sbox:focus{border-color:var(--ac);}
+.sbox::placeholder{color:var(--t2);}
+
+.add-form{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:end;}
+.add-form label{font-size:10px;color:var(--t2);display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.4px;font-weight:600;}
+.add-form input{background:var(--bg);border:1px solid var(--bd);color:var(--tx);padding:6px 10px;border-radius:6px;font-family:var(--font);font-size:12px;outline:none;width:260px;}
+.add-form input:focus{border-color:var(--ac);}
+
+.hint{padding:8px 12px;background:rgba(91,141,239,.07);border:1px solid rgba(91,141,239,.18);border-radius:8px;font-size:11px;color:var(--t2);margin-bottom:10px;line-height:1.5;}
+.hint b{color:var(--ac);}
+
+.mnav{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.mnav button{background:var(--s2);border:1px solid var(--bd);color:var(--t2);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--font);}
+.mnav button:hover{color:var(--tx);border-color:var(--t2);}
+.mnav span{font-size:11px;color:var(--t2);}
+
+.gc{overflow-x:auto;border:1px solid var(--bd);border-radius:8px;background:var(--s1);}
+.grid{display:grid;min-width:fit-content;}
+.gh{display:contents;}
+.gh>div{position:sticky;top:0;z-index:3;background:var(--s2);padding:6px 8px;font-size:9px;color:var(--t2);text-transform:uppercase;letter-spacing:.3px;font-weight:700;border-bottom:2px solid var(--bd);white-space:nowrap;text-align:right;}
+.gh>div:first-child{text-align:left;position:sticky;left:0;z-index:4;min-width:180px;}
+
+.pg{display:contents;}
+.ph{display:contents;}
+.ph>div{padding:6px 8px;font-size:11px;font-weight:700;background:var(--s2);border-bottom:1px solid var(--bd);border-top:2px solid var(--bd);text-align:right;font-family:var(--mono);}
+.ph-name{text-align:left !important;font-family:var(--font) !important;position:sticky;left:0;z-index:2;background:var(--s2);display:flex;align-items:center;gap:4px;font-size:12px;}
+.del{background:none;border:none;color:var(--t2);cursor:pointer;font-size:14px;padding:0 3px;opacity:.4;}
+.del:hover{color:var(--rd);opacity:1;}
+
+.row{display:contents;}
+.row>div{padding:3px 8px;font-size:11px;border-bottom:1px solid rgba(45,52,80,.5);text-align:right;}
+.rl{text-align:left !important;font-family:var(--font);font-weight:500;position:sticky;left:0;z-index:1;background:var(--s1);padding-left:16px !important;font-size:11px;}
+.rs .rl{color:var(--ac);}
+.rc .rl{color:var(--rd);}
+.rg>div{font-weight:700;border-bottom:2px solid var(--bd);}
+
+.cl{padding:2px 4px;min-height:20px;cursor:pointer;border-radius:3px;font-family:var(--mono);font-size:11px;text-align:right;transition:.1s;}
+.cl:hover{background:rgba(91,141,239,.1);}
+.cl-s{color:var(--tx);}
+.cl-c{color:var(--rd);}
+.ci{width:100%;background:var(--bg);border:1px solid var(--ac);color:var(--tx);font-family:var(--mono);font-size:11px;padding:2px 4px;border-radius:3px;outline:none;text-align:right;}
+
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;gap:14px;}
+.loading p{font-size:13px;color:var(--t2);}
+.spinner{width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.err{padding:10px 14px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:8px;font-size:12px;color:var(--rd);margin-bottom:10px;}
+.empty{text-align:center;padding:40px;color:var(--t2);font-size:13px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useEffect, useCallback, useRef } = React;
+
+const API = "https://script.google.com/macros/s/AKfycbxZSeOefNZ7nPHiq_Y7ZJNUnIGgfXe8p89KNGLQWhyNdS1SDFy0ZZu5_MdWyc1jrrpFDw/exec";
+const MONTHS = ["Jan-25","Feb-25","Mar-25","Apr-25","May-25","Jun-25","Jul-25","Aug-25","Sep-25","Oct-25","Nov-25","Dec-25","Jan-26","Feb-26","Mar-26","Apr-26","May-26","Jun-26","Jul-26","Aug-26","Sep-26","Oct-26","Nov-26","Dec-26"];
+const ROWS_DISPLAY = ["Sales", "External Materials", "ProFab Materials", "Other Costs"];
+const ROW_KEYS = ["Sales", "ExtMaterials", "ProfabMaterials", "OtherCosts"];
+const USER_KEY = "pipeline-user-name";
+
+async function apiGet(action) {
+  try {
+    const r = await fetch(API + "?action=" + action, { redirect: "follow" });
+    return (await r.json()).data || [];
+  } catch(e) { console.error(e); return []; }
+}
+async function apiPost(payload) {
+  try {
+    await fetch(API, { method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain"}, body:JSON.stringify(payload) });
+    return true;
+  } catch(e) { console.error(e); return false; }
+}
+
+const fmt = v => v ? v.toLocaleString("en-AU") : "";
+const fmtK = v => { if(!v) return "-"; const a=Math.abs(v); if(a>=1e6) return `${v<0?"-":""}$${(a/1e6).toFixed(1)}M`; if(a>=1e3) return `${v<0?"-":""}$${(a/1e3).toFixed(0)}K`; return `$${v}`; };
+
+function EditableCell({value, onChange, isSales}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const ref = useRef(null);
+  useEffect(() => { if(editing && ref.current) ref.current.focus(); }, [editing]);
+  const commit = () => {
+    setEditing(false);
+    const num = parseFloat(draft.replace(/,/g,"")) || 0;
+    if(num !== (value||0)) onChange(num);
+  };
+  if(editing) return <input ref={ref} className="ci" value={draft} onChange={e=>setDraft(e.target.value)} onBlur={commit} onKeyDown={e=>{if(e.key==="Enter")commit();if(e.key==="Escape")setEditing(false);}} />;
+  return <div className={`cl ${isSales?"cl-s":"cl-c"}`} onDoubleClick={()=>{setDraft(value?String(value):"");setEditing(true);}}>{value?fmt(value):""}</div>;
+}
+
+function App() {
+  const [userName, setUserName] = useState(localStorage.getItem(USER_KEY) || "");
+  const [nameInput, setNameInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [lastSave, setLastSave] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [monthly, setMonthly] = useState({});
+  const [search, setSearch] = useState("");
+  const [scrollMonth, setScrollMonth] = useState(12);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newCp, setNewCp] = useState("");
+  const [error, setError] = useState(null);
+
+  const submitName = (name) => {
+    localStorage.setItem(USER_KEY, name);
+    setUserName(name);
+  };
+
+  const loadData = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const [projData, monthData] = await Promise.all([apiGet("getProjects"), apiGet("getMonthly")]);
+      if(projData.length > 0) {
+        setProjects(projData.map(p => ({ name:p.Project||p.Title||"", cp:Number(p.ContractPrice)||0, v:Number(p.Variations)||0, status:p.Status||"Active" })));
+      }
+      const mMap = {};
+      monthData.forEach(row => {
+        const proj = row.Project||row.Title||"";
+        const month = row.Month||"";
+        if(!proj||!month) return;
+        mMap[proj+"|||"+month] = { Sales:Number(row.Sales)||0, ExtMaterials:Number(row.ExtMaterials)||0, ProfabMaterials:Number(row.ProfabMaterials)||0, OtherCosts:Number(row.OtherCosts)||0 };
+      });
+      setMonthly(mMap);
+    } catch(e) { setError("Could not load data. Check your connection."); }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { if(userName) loadData(); }, [userName, loadData]);
+
+  const getVal = (proj, month, col) => monthly[proj+"|||"+month]?.[col] || 0;
+
+  const updateCell = useCallback(async (proj, month, col, val) => {
+    const key = proj+"|||"+month;
+    setMonthly(prev => ({...prev, [key]:{...(prev[key]||{}), [col]:val}}));
+    setSaving(true);
+    await apiPost({action:"updateCell", project:proj, month, column:col, value:val, editedBy:userName, editedAt:new Date().toLocaleString("en-AU")});
+    setLastSave(new Date()); setSaving(false);
+  }, [userName]);
+
+  const addProject = async () => {
+    if(!newName.trim()) return;
+    const cp = parseFloat(newCp.replace(/,/g,""))||0;
+    setSaving(true);
+    await apiPost({action:"addProject", name:newName.trim(), contractPrice:cp, variations:0});
+    setProjects(prev => [...prev, {name:newName.trim(), cp, v:0, status:"Active"}]);
+    setNewName(""); setNewCp(""); setShowAdd(false); setSaving(false); setLastSave(new Date());
+  };
+
+  const deleteProject = async (name) => {
+    if(!confirm('Delete "'+name+'" and all its data?')) return;
+    setSaving(true);
+    await apiPost({action:"deleteProject", name});
+    setProjects(prev => prev.filter(p=>p.name!==name));
+    setMonthly(prev => { const n={...prev}; Object.keys(n).forEach(k=>{if(k.startsWith(name+"|||"))delete n[k];}); return n; });
+    setSaving(false); setLastSave(new Date());
+  };
+
+  const computed = useMemo(() => projects.map((p,idx) => {
+    let sT=0,eT=0,pT=0,oT=0;
+    MONTHS.forEach(m => { sT+=getVal(p.name,m,"Sales"); eT+=getVal(p.name,m,"ExtMaterials"); pT+=getVal(p.name,m,"ProfabMaterials"); oT+=getVal(p.name,m,"OtherCosts"); });
+    const total=p.cp+p.v, gp=sT-eT-pT-oT, tba=total-sT;
+    return {...p, idx, salesTotal:sT, extTotal:eT, profabTotal:pT, otherTotal:oT, total, gp, tba};
+  }), [projects, monthly]);
+
+  const filtered = useMemo(() => {
+    if(!search) return computed;
+    const q = search.toLowerCase();
+    return computed.filter(p => p.name.toLowerCase().includes(q));
+  }, [computed, search]);
+
+  const visibleMonths = MONTHS.slice(scrollMonth, scrollMonth+12);
+  const totalPipeline = computed.reduce((s,p)=>s+p.total,0);
+  const totalGP = computed.reduce((s,p)=>s+p.gp,0);
+  const totalSales = computed.reduce((s,p)=>s+p.salesTotal,0);
+
+  // NAME PROMPT
+  if(!userName) return (
+    <div className="np-overlay">
+      <div className="np-card">
+        <div className="np-icon">👤</div>
+        <h2>Welcome to Pipeline</h2>
+        <p>Enter your name so the team knows who made each edit.</p>
+        <input className="np-input" placeholder="e.g. Jake, Sarah, Ben..." value={nameInput} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&nameInput.trim())submitName(nameInput.trim());}} autoFocus />
+        <button className="np-btn" disabled={!nameInput.trim()} onClick={()=>submitName(nameInput.trim())}>Enter Dashboard →</button>
+        <p className="np-hint">This saves to your browser — you only do this once.</p>
+      </div>
+    </div>
+  );
+
+  // MAIN APP
+  return (
+    <div className="app">
+      <div className="hd">
+        <div className="hd-l">
+          <h1>Pipeline Mastersheet</h1>
+          <span className="dot" />
+          <span className="dot-text">{saving ? "Saving..." : "Connected"}</span>
+        </div>
+        <div className="hd-r">
+          <span className="ubadge">👤 {userName}</span>
+          {lastSave && <span className="svtime">Saved {lastSave.toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit"})}</span>}
+          <button className="rbtn" onClick={loadData}>↻ Sync</button>
+        </div>
+      </div>
+
+      {error && <div className="err">{error} <button className="pill" onClick={loadData} style={{marginLeft:8}}>Retry</button></div>}
+
+      {loading ? (
+        <div className="loading"><div className="spinner"/><p>Loading from Google Sheets...</p></div>
+      ) : (
+        <>
+          <div className="stats">
+            <div className="stat"><div className="lb">Total Pipeline</div><div className="vl" style={{color:"var(--ac)"}}>{fmtK(totalPipeline)}</div><div className="sb">{computed.length} projects</div></div>
+            <div className="stat"><div className="lb">Revenue Claimed</div><div className="vl">{fmtK(totalSales)}</div></div>
+            <div className="stat"><div className="lb">Gross Profit</div><div className="vl" style={{color:"var(--gn)"}}>{fmtK(totalGP)}</div><div className="sb">{totalSales?((totalGP/totalSales)*100).toFixed(1):0}% margin</div></div>
+            <div className="stat"><div className="lb">To Allocate</div><div className="vl" style={{color:"var(--am)"}}>{fmtK(computed.reduce((s,p)=>s+Math.max(0,p.tba),0))}</div></div>
+          </div>
+
+          <div className="bar">
+            <button className="pill grn" onClick={()=>setShowAdd(!showAdd)}>+ Add Project</button>
+            <div className="divider"/>
+            <input className="sbox" placeholder="Search projects..." value={search} onChange={e=>setSearch(e.target.value)} />
+          </div>
+
+          {showAdd && (
+            <div className="add-form">
+              <div><label>Project Name</label><input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="e.g. 2140 - Project - Client" /></div>
+              <div><label>Contract Price</label><input value={newCp} onChange={e=>setNewCp(e.target.value)} placeholder="500000" style={{width:140}} /></div>
+              <button className="pill grn" onClick={addProject}>Add</button>
+              <button className="pill" onClick={()=>setShowAdd(false)}>Cancel</button>
+            </div>
+          )}
+
+          <div className="hint"><b>Double-click</b> any cell to edit. Changes save to Google Sheets instantly, tagged as <b>{userName}</b>.</div>
+
+          <div className="mnav">
+            <button onClick={()=>setScrollMonth(Math.max(0,scrollMonth-3))}>← Earlier</button>
+            <span>{visibleMonths[0]} — {visibleMonths[visibleMonths.length-1]}</span>
+            <button onClick={()=>setScrollMonth(Math.min(12,scrollMonth+3))}>Later →</button>
+            <div style={{flex:1}}/>
+            <button onClick={()=>setScrollMonth(0)}>2025</button>
+            <button onClick={()=>setScrollMonth(12)}>2026</button>
+          </div>
+
+          <div className="gc" style={{maxHeight:"70vh",overflowY:"auto"}}>
+            <div className="grid" style={{gridTemplateColumns:"180px 90px 80px 90px 90px 85px 80px "+visibleMonths.map(()=>"88px").join(" ")}}>
+              <div className="gh">
+                <div style={{textAlign:"left"}}>Project</div>
+                <div>Contract</div><div>Var.</div><div>Total</div><div>Claimed</div><div>To Alloc.</div><div>GP</div>
+                {visibleMonths.map(m=><div key={m}>{m}</div>)}
+              </div>
+
+              {filtered.map(p => {
+                const gpM = m => getVal(p.name,m,"Sales")-getVal(p.name,m,"ExtMaterials")-getVal(p.name,m,"ProfabMaterials")-getVal(p.name,m,"OtherCosts");
+                return (
+                  <div className="pg" key={p.idx}>
+                    <div className="ph">
+                      <div className="ph-name"><button className="del" onClick={()=>deleteProject(p.name)}>×</button>{p.name}</div>
+                      <div>{fmt(p.cp)}</div>
+                      <div style={{color:"var(--am)"}}>{p.v?fmt(p.v):"-"}</div>
+                      <div style={{fontWeight:800}}>{fmt(p.total)}</div>
+                      <div>{fmt(p.salesTotal)}</div>
+                      <div style={{color:p.tba<0?"var(--rd)":p.tba>0?"var(--am)":"var(--gn)"}}>{fmt(p.tba)}</div>
+                      <div style={{color:"var(--gn)"}}>{fmt(p.gp)}</div>
+                      {visibleMonths.map(m=><div key={m} style={{fontSize:10,color:"var(--t2)"}}>{getVal(p.name,m,"Sales")?fmt(getVal(p.name,m,"Sales")):""}</div>)}
+                    </div>
+                    {ROW_KEYS.map((rk,ri) => (
+                      <div className={"row "+(ri===0?"rs":"rc")} key={rk}>
+                        <div className="rl">{ROWS_DISPLAY[ri]}</div>
+                        <div/><div/><div/>
+                        <div style={{fontFamily:"var(--mono)",fontSize:10}}>{fmt(computed.find(c=>c.name===p.name)?.[ri===0?"salesTotal":ri===1?"extTotal":ri===2?"profabTotal":"otherTotal"])||""}</div>
+                        <div/><div/>
+                        {visibleMonths.map(m=>(
+                          <div key={m}><EditableCell value={getVal(p.name,m,rk)} onChange={val=>updateCell(p.name,m,rk,val)} isSales={ri===0}/></div>
+                        ))}
+                      </div>
+                    ))}
+                    <div className="row rg">
+                      <div className="rl" style={{color:"var(--gn)"}}>Gross Profit</div>
+                      <div/><div/><div/>
+                      <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--gn)",fontWeight:700}}>{fmt(p.gp)}</div>
+                      <div/><div/>
+                      {visibleMonths.map(m=>{const v=gpM(m);return <div key={m} style={{fontFamily:"var(--mono)",fontSize:10,color:v<0?"var(--rd)":"var(--gn)",fontWeight:600}}>{v?fmt(v):""}</div>;})}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {filtered.length===0 && (
+            <div className="empty">{projects.length===0?"No projects yet. Click '+ Add Project' or add rows directly in your Google Sheet.":"No projects match your search."}</div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
+</script>
+</body>
+</html>
