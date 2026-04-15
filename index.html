@@ -118,6 +118,16 @@ function F(obj,...names){
   return "";
 }
 
+
+// Convert ISO dates or any format to "Mon-YY" (e.g. "Jan-26")
+function pM(v){
+  var s=String(v||"").trim();
+  if(/^[A-Za-z]{3}-\d{2}$/.test(s))return s.charAt(0).toUpperCase()+s.slice(1,3).toLowerCase()+s.slice(3);
+  if(s.includes("T")||(/^\d{4}-/.test(s))){
+    var d=new Date(s);if(!isNaN(d)){var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return ms[d.getUTCMonth()]+"-"+String(d.getUTCFullYear()).slice(2)}}
+  if(/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(s)){var d=new Date(s);if(!isNaN(d)){var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return ms[d.getMonth()]+"-"+String(d.getFullYear()).slice(2)}}
+  return s;
+}
 function EC({value,onChange,cls}){
   const[e,sE]=useState(false);const[d,sD]=useState("");const r=useRef();
   useEffect(()=>{if(e&&r.current)r.current.focus()},[e]);
@@ -172,7 +182,7 @@ const load=useCallback(async()=>{
   const mm={};
   mD.forEach(row=>{
     const pn=String(F(row,"Project","project","PROJECT","Title")).trim();
-    const mn=String(F(row,"Month","month","MONTH")).trim();
+    const mn=pM(F(row,"Month","month","MONTH"));
     if(!pn||!mn)return;
     mm[pn+"|||"+mn]={
       Sales:N(F(row,"Sales","sales","SALES")),
