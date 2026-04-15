@@ -129,7 +129,7 @@
 <script type="text/babel">
 const{useState,useMemo,useEffect,useCallback,useRef}=React;
 const API="https://script.google.com/macros/s/AKfycbxZSeOefNZ7nPHiq_Y7ZJNUnIGgfXe8p89KNGLQWhyNdS1SDFy0ZZu5_MdWyc1jrrpFDw/exec";
-const MO=["Jan-25","Feb-25","Mar-25","Apr-25","May-25","Jun-25","Jul-25","Aug-25","Sep-25","Oct-25","Nov-25","Dec-25","Jan-26","Feb-26","Mar-26","Apr-26","May-26","Jun-26","Jul-26","Aug-26","Sep-26","Oct-26","Nov-26","Dec-26"];
+const DEF_MO=["Jan-25","Feb-25","Mar-25","Apr-25","May-25","Jun-25","Jul-25","Aug-25","Sep-25","Oct-25","Nov-25","Dec-25","Jan-26","Feb-26","Mar-26","Apr-26","May-26","Jun-26","Jul-26","Aug-26","Sep-26","Oct-26","Nov-26","Dec-26"];
 const RN=["External Materials","ProFab Materials","Other Costs"];
 const RK=["ExtMaterials","ProfabMaterials","OtherCosts"];
 const UK="pipeline-v9";
@@ -160,6 +160,9 @@ if(e)return<input ref={r} className="cin" value={d} onChange={x=>sD(x.target.val
 return<span className="pne" onDoubleClick={()=>{sD(value);sE(true)}}>{value}</span>}
 
 function App(){
+const[months,setMonths]=useState(()=>{const saved=localStorage.getItem("pipeline-months");return saved?JSON.parse(saved):DEF_MO});
+const MO=months;
+const addMonth=()=>{const last=MO[MO.length-1];const ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const p=last.split("-");const mi=ms.indexOf(p[0]);const yr=parseInt(p[1]);const nm=mi===11?ms[0]+"-"+String(yr+1).padStart(2,"0"):ms[mi+1]+"-"+p[1];const nw=[...MO,nm];setMonths(nw);localStorage.setItem("pipeline-months",JSON.stringify(nw))};
 const[un,sU]=useState(localStorage.getItem(UK)||"");const[ni,sNi]=useState("");
 const[ld,sLd]=useState(true);const[sv,sSv]=useState(false);const[ls,sLs]=useState(null);
 const[pj,sPj]=useState([]);const[mo,sMo]=useState({});const[vo,sVo]=useState([]);
@@ -201,7 +204,7 @@ const doLock=async m=>{if(!isLk(m)){const s=comp.reduce((a,p)=>a+gv(p.nm,m,"Sale
 
 const comp=useMemo(()=>pj.filter(p=>!p.nm.startsWith("_")).map((p,i)=>{let sT=0,eT=0,pT=0,oT=0;MO.forEach(m=>{sT+=gv(p.nm,m,"Sales");eT+=gv(p.nm,m,"ExtMaterials");pT+=gv(p.nm,m,"ProfabMaterials");oT+=gv(p.nm,m,"OtherCosts")});const avo=voP[p.nm]||0,tot=p.cp+p.v+avo,gp=tot-eT-pT-oT;return{...p,i,sT,eT,pT,oT,avo,tot,gp,tba:tot-sT}}),[pj,mo,voP]);
 const flt=useMemo(()=>{if(!sr)return comp;const q=sr.toLowerCase();return comp.filter(p=>p.nm.toLowerCase().includes(q))},[comp,sr]);
-const vis=MO.slice(sc,sc+12);
+const vis=MO;
 const sumM=useMemo(()=>{const o={};MO.forEach(m=>{let s=0,e=0,p=0,ot=0;comp.forEach(pr=>{s+=gv(pr.nm,m,"Sales");e+=gv(pr.nm,m,"ExtMaterials");p+=gv(pr.nm,m,"ProfabMaterials");ot+=gv(pr.nm,m,"OtherCosts")});o[m]={s,e,p,ot}});return o},[comp,mo]);
 const cd=useMemo(()=>{const ms=selM.length>0?selM:null;let con=0,sal=0,ext=0,pfb=0,oth=0;comp.forEach(p=>{con+=p.tot;if(ms){ms.forEach(m=>{sal+=gv(p.nm,m,"Sales");ext+=gv(p.nm,m,"ExtMaterials");pfb+=gv(p.nm,m,"ProfabMaterials");oth+=gv(p.nm,m,"OtherCosts")})}else{sal+=p.sT;ext+=p.eT;pfb+=p.pT;oth+=p.oT}});const costs=ext+pfb+oth;return{con,sal,ext,pfb,oth,costs,gp:sal-costs,label:ms?ms.join(", "):"All months"}},[selM,comp,mo]);
 const pSR=[{k:"_PS",n:"Subcontractors: Non Full-Time"},{k:"_PO",n:"Group Overhead"},{k:"_PW",n:"Wages: PFAB"},{k:"_PM",n:"Wages: PMC, PF & Internal Subbies"},{k:"_PE",n:"No. of Employees On-site",nc:true}];
