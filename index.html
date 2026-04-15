@@ -117,6 +117,14 @@
 .slbl{grid-column:1/8;text-align:left;font-family:var(--ft);font-weight:600;font-size:9px;padding-left:8px!important;white-space:normal;position:sticky;left:0;z-index:1;background:var(--s1)}
 .sr-c .slbl{color:var(--ac)}.sr-e .slbl{color:var(--am)}
 .sr-t .slbl{grid-column:1/8;text-align:left;font-family:var(--ft);font-size:9px;padding-left:8px!important;position:sticky;left:0;z-index:1;background:var(--s1);white-space:normal}
+
+.ss{scrollbar-width:none;-ms-overflow-style:none}
+.ss::-webkit-scrollbar{display:none}
+.scroll-ctrl{overflow-x:auto;margin-top:4px}
+.scroll-ctrl::-webkit-scrollbar{height:8px}
+.scroll-ctrl::-webkit-scrollbar-track{background:var(--s2);border-radius:4px}
+.scroll-ctrl::-webkit-scrollbar-thumb{background:var(--bd);border-radius:4px}
+.scroll-ctrl::-webkit-scrollbar-thumb:hover{background:var(--t2)}
 </style></head><body><div id="root"></div>
 <script type="text/babel">
 const{useState,useMemo,useEffect,useCallback,useRef}=React;
@@ -301,6 +309,9 @@ return<div className="pg" key={p.i}>
 {aSR.map(row=><div className="sr sr-e" key={row.k}><div className="slbl">{row.n}</div>{vis.map(m=><div key={m}><EC value={gv(row.k,m,"Sales")} onChange={v=>uC(row.k,m,"Sales",v)} cls="cl ce"/></div>)}</div>)}
 <div className="sr-t"><div className="slbl" style={{color:"var(--gn)"}}>PMC & PF Profit (Loss)</div>{vis.map(m=>{const lk=isLk(m);if(!lk)return<div key={m}/>;const s=sumM[m]?.s||0;const c2=(sumM[m]?.e||0)+(sumM[m]?.p||0)+(sumM[m]?.ot||0)+aSR.filter(r=>!r.nc).reduce((a,r)=>a+gv(r.k,m,"Sales"),0);const pl=s-c2;return<div key={m} style={{color:pl<0?"var(--rd)":"var(--gn)"}}>{pl?fm(pl):""}</div>})}</div>
 </div></div>}
+
+{/* Single scrollbar controller */}
+<div className="scroll-ctrl ss" onScroll={syncScroll}><div style={{height:1,minWidth:568+vis.length*72}}/></div>
 
 {flt.length===0&&<div className="em">{pj.length===0?"No projects.":"No match."}</div>}
 </>}
