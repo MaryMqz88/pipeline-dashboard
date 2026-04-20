@@ -58,7 +58,7 @@
 .xb{background:none;border:none;color:var(--t2);cursor:pointer;font-size:11px;opacity:.3;padding:0 1px;flex-shrink:0}.xb:hover{color:var(--rd);opacity:1}
 .pne{cursor:pointer;color:var(--ac);font-size:10px;font-weight:700}.pne:hover{color:var(--am)}
 .st-tag{font-size:7px;font-weight:700;padding:1px 5px;border-radius:8px;flex-shrink:0;cursor:pointer}
-.st-live{background:rgba(52,211,153,.15);color:var(--gn)}.st-done{background:rgba(125,137,166,.15);color:var(--t2)}
+.st-live{background:rgba(52,211,153,.15);color:var(--gn)}.st-done{background:rgba(125,137,166,.15);color:var(--t2)}.st-pend{background:rgba(220,74,74,.15);color:var(--rd)}
 .jid-tag{font-size:8px;color:var(--t2);font-family:var(--mn);flex-shrink:0;background:var(--bg);border:1px solid var(--bd);padding:0 4px;border-radius:3px;outline:none;width:50px}
 .jid-tag:focus{border-color:var(--ac);color:var(--tx)}
 .cin{background:var(--bg);border:1px solid var(--ac);color:var(--tx);font-family:var(--ft);font-size:10px;padding:2px 4px;border-radius:2px;outline:none;width:140px}
@@ -244,11 +244,11 @@ const c=()=>{sE(false);const n=parseFloat(d.replace(/,/g,""))||0;if(n!==(value||
 if(e)return<input ref={r} className="ci" value={d} onChange={x=>sD(x.target.value)} onBlur={c} onKeyDown={x=>{if(x.key==="Enter")c();if(x.key==="Escape")sE(false)}}/>;
 return<div className={(cls||"cl cs")} onDoubleClick={()=>{sD(value?String(value):"");sE(true)}}>{value?fm(value):""}</div>}
 
-function EN({value,onSave}){const[e,sE]=useState(false);const[d,sD]=useState("");const r=useRef();
+function EN({value,onSave,style}){const[e,sE]=useState(false);const[d,sD]=useState("");const r=useRef();
 useEffect(()=>{if(e&&r.current){r.current.focus();r.current.select()}},[e]);
 const c=()=>{sE(false);if(d.trim()&&d.trim()!==value)onSave(d.trim())};
 if(e)return<input ref={r} className="cin" value={d} onChange={x=>sD(x.target.value)} onBlur={c} onKeyDown={x=>{if(x.key==="Enter")c();if(x.key==="Escape")sE(false)}}/>;
-return<span className="pne" onDoubleClick={()=>{sD(value);sE(true)}}>{value}</span>}
+return<span className="pne" style={style} onDoubleClick={()=>{sD(value);sE(true)}}>{value}</span>}
 
 function App(){
 const[months,setMonths]=useState(()=>{const saved=localStorage.getItem("pipeline-months");return saved?JSON.parse(saved):DEF_MO});
@@ -348,7 +348,7 @@ return<div className="app" onClick={e=>{const el=e.target.closest('.cl');if(el){
 </div>}
 {vw==="grid"&&<div className="br">
 <button className="pl gn" onClick={()=>sSa(!sa)}>+ Project</button>
-<select className="sf" value={stFilt} onChange={e=>setStFilt(e.target.value)}><option value="all">All Status</option><option value="Live">Live</option><option value="Completed">Completed</option></select><input className="sx" placeholder="Search..." value={sr} onChange={e=>sSr(e.target.value)}/>
+<select className="sf" value={stFilt} onChange={e=>setStFilt(e.target.value)}><option value="all">All Status</option><option value="Live">Live</option><option value="Completed">Completed</option><option value="Pending">Pending</option></select><input className="sx" placeholder="Search..." value={sr} onChange={e=>sSr(e.target.value)}/>
 </div>}
 {vw==="grid"&&sa&&<div className="af"><div><label>Project</label><input value={nn} onChange={e=>sNn(e.target.value)} placeholder="Project name" style={{width:200}}/></div><div><label>Contract</label><input value={nc} onChange={e=>sNc(e.target.value)} placeholder="0" style={{width:100}}/></div><button className="pl gn" onClick={aPj}>Add</button><button className="pl" onClick={()=>sSa(false)}>Cancel</button></div>}
 
@@ -367,8 +367,8 @@ return<div className="pg" key={p.i}>
 {/* Project row = Sales (Status+JobID inside first cell) */}
 <div className="pr">
 <div style={{display:"flex",flexDirection:"column",gap:1,width:"100%"}}>
-<div style={{display:"flex",alignItems:"center",gap:2}}><button className="xb" onClick={()=>dPj(p.nm)}>×</button><EN value={p.nm} onSave={nw=>renP(p.nm,nw)}/></div>
-<div style={{display:"flex",alignItems:"center",gap:2,opacity:.7,transform:"scale(0.85)",transformOrigin:"left center"}}><button className="eb" onClick={()=>togExp(p.nm)}>{open?"−":"+"}</button><span className={"st-tag "+(p.st==="Live"?"st-live":"st-done")} onClick={()=>uP(p.nm,"Status",p.st==="Live"?"Completed":"Live")}>{p.st==="Live"?"LIVE":"DONE"}</span><input className="jid-tag" value={p.jid} onChange={e=>uP(p.nm,"Job ID",e.target.value)} placeholder="ID"/></div>
+<div style={{display:"flex",alignItems:"center",gap:2}}><button className="xb" onClick={()=>dPj(p.nm)}>×</button><EN value={p.nm} onSave={nw=>renP(p.nm,nw)} style={p.st==="Pending"?{color:"var(--rd)"}:{}}/></div>
+<div style={{display:"flex",alignItems:"center",gap:2,opacity:.7,transform:"scale(0.85)",transformOrigin:"left center"}}><button className="eb" onClick={()=>togExp(p.nm)}>{open?"−":"+"}</button><span className={"st-tag "+(p.st==="Live"?"st-live":p.st==="Pending"?"st-pend":"st-done")} onClick={()=>uP(p.nm,"Status",p.st==="Live"?"Pending":p.st==="Pending"?"Completed":"Live")}>{p.st==="Live"?"LIVE":p.st==="Pending"?"PENDING":"DONE"}</span><input className="jid-tag" value={p.jid} onChange={e=>uP(p.nm,"Job ID",e.target.value)} placeholder="ID"/></div>
 </div>
 <div className={hovOn&&hovR===p.nm?"rh":""}><EC value={p.cp} onChange={v=>uP(p.nm,"Contract Price",v)} cls="cl ce"/></div>
 <div className={hovOn&&hovR===p.nm?"rh":""}><EC value={p.v} onChange={v=>uP(p.nm,"Variations",v)} cls="cl ce"/></div>
