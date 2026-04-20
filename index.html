@@ -283,13 +283,15 @@ const load=useCallback(async()=>{
   if(r.error){sEr(r.error);sLd(false);return}
   const pD=r.projects||[],mD=r.monthly||[],vD=r.voRegister||[];
   sPj(pD.map(p=>({nm:String(F(p,"Project","PROJECT","Title")).trim(),jid:String(F(p,"Job ID","JOB ID","JobID")||""),cp:N(F(p,"ContractPrice","Contract Price","CONTRACT PRICE")),v:N(F(p,"Variations","VARIATIONS")),st:String(F(p,"Status","STATUS"))||"Live"})));
-  const mm={};mD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=pM(F(row,"Month","MONTH"));if(!pn||!mn)return;const key=nk(pn)+"|||"+mn;const sV=N(F(row,"Sales","SALES")),eV=N(F(row,"ExtMaterials","EXT-MATERIALS","EXTERNAL MATERIALS")),pV=N(F(row,"ProfabMaterials","PROFAB MATERIALS")),oV=N(F(row,"OtherCosts","OTHER COSTS"));const prev=mm[key]||{Sales:0,ExtMaterials:0,ProfabMaterials:0,OtherCosts:0};mm[key]={Sales:sV||prev.Sales,ExtMaterials:eV||prev.ExtMaterials,ProfabMaterials:pV||prev.ProfabMaterials,OtherCosts:oV||prev.OtherCosts}});console.log("MO KEYS:",Object.keys(mm).slice(0,5));console.log("PROJ NAMES:",pD.map(p=>String(F(p,"Project","PROJECT")).trim()).slice(0,3));sMo(mm);
+  const mm={};mD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=pM(F(row,"Month","MONTH"));if(!pn||!mn)return;const key=nk(pn)+"|||"+mn;const sV=N(F(row,"Sales","SALES")),eV=N(F(row,"ExtMaterials","EXT-MATERIALS","EXTERNAL MATERIALS")),pV=N(F(row,"ProfabMaterials","PROFAB MATERIALS")),oV=N(F(row,"OtherCosts","OTHER COSTS"));const prev=mm[key]||{Sales:0,ExtMaterials:0,ProfabMaterials:0,OtherCosts:0};mm[key]={Sales:sV||prev.Sales,ExtMaterials:eV||prev.ExtMaterials,ProfabMaterials:pV||prev.ProfabMaterials,OtherCosts:oV||prev.OtherCosts}});sMo(mm);
   sVo(vD.map((v,i)=>({i,_r:v._row!==undefined?v._row:i,pj:String(F(v,"PROJECT","Project")).trim(),ty:String(F(v,"TYPE","Type")),vn:String(F(v,"VARIATION NO.")),vnm:String(F(v,"VARIATION NAME")),ds:String(F(v,"DATE SUBMITTED")),da:String(F(v,"DATE APPROVED")),pr:N(F(v,"PRICE","REVENUE")),st:String(F(v,"STATUS","Status")),em:N(F(v,"EXTERNAL MATERIALS")),pf:N(F(v,"PFAB MATERIALS")),nmn:N(F(v,"NO. OF MEN")),nh:N(F(v,"NORMAL HOURS")),nr:N(F(v,"NORMAL RATE")),oh:N(F(v,"OVERTIME HOURS")),or2:N(F(v,"OVERTIME RATE"))})));
   sLd(false)},[]);
 
 useEffect(()=>{if(un)load()},[un,load]);
 const gv=(p,m,c)=>mo[nk(p)+"|||"+m]?.[c]||0;
 const voP=useMemo(()=>{const m={};vo.forEach(v=>{if(isAp(v.st))m[v.pj]=(m[v.pj]||0)+v.pr});return m},[vo]);
+const voExt=useMemo(()=>{const m={};vo.forEach(v=>{if(isAp(v.st))m[v.pj]=(m[v.pj]||0)+v.em});return m},[vo]);
+const voPfab=useMemo(()=>{const m={};vo.forEach(v=>{if(isAp(v.st))m[v.pj]=(m[v.pj]||0)+v.pf});return m},[vo]);
 
 const uC=useCallback(async(p,m,c,val)=>{sMo(pr=>({...pr,[nk(p)+"|||"+m]:{...(pr[nk(p)+"|||"+m]||{}),[c]:val}}));sSv(true);await aP({action:"updateCell",project:p,month:m,column:c,value:val,editedBy:un,editedAt:new Date().toLocaleString("en-AU")});sLs(new Date());sSv(false)},[un]);
 const uP=useCallback(async(nm,fd,val)=>{const fl=fd.toLowerCase();sPj(pr=>pr.map(p=>p.nm===nm?{...p,[fl.includes("contract")?"cp":fl.includes("job")?"jid":fl.includes("status")?"st":"v"]:val}:p));sSv(true);await aP({action:"updateProject",name:nm,field:fd,value:val});sLs(new Date());sSv(false)},[]);
@@ -377,9 +379,19 @@ return<div className="pg" key={p.i}>
 {vis.map(m=><div key={m} className={(hovOn&&hovR===p.nm?"rh":"")+" "+(hovOn&&hovC===m?"ch":"")+(m===CUR_M?" cm-hl":"")} onMouseEnter={()=>{hovOn&&sHR(p.nm);hovOn&&sHC(m)}} onMouseLeave={()=>{sHR(null);sHC(null)}} style={m===CUR_M?{borderLeft:"2px solid var(--ac)",borderRight:"2px solid var(--ac)",background:"rgba(68,114,196,.06)"}:{}}><EC value={gv(p.nm,m,"Sales")} onChange={val=>uC(p.nm,m,"Sales",val)} cls="cl cs"/></div>)}
 </div>
 {/* Collapsible sub-rows */}
-{open&&<>{RK.map((rk,ri)=><div className={"rw r"+(ri+1)} key={rk}><div className="rl">{RN[ri]}</div><div/><div/><div/>
-<div style={{fontFamily:"var(--mn)",color:"#c45e10"}}>{fm([p.eT,p.pT,p.oT][ri])}</div>
-<div style={{fontFamily:"var(--mn)",color:"#c45e10"}}>{fm([p.eT,p.pT,p.oT][ri])}</div><div/>
+{open&&<>{RK.map((rk,ri)=>{
+const bCon=gv(p.nm,"_BC",rk);const bVar=gv(p.nm,"_BV",rk);
+const avoC=ri===0?(voExt[p.nm]||0):ri===1?(voPfab[p.nm]||0):0;
+const cTot=bCon+bVar+avoC;
+const cClaimed=[p.eT,p.pT,p.oT][ri];
+const cTba=cTot-cClaimed;
+return<div className={"rw r"+(ri+1)} key={rk}><div className="rl">{RN[ri]}</div>
+<div><EC value={bCon} onChange={v=>uC(p.nm,"_BC",rk,v)} cls="cl ce"/></div>
+<div><EC value={bVar} onChange={v=>uC(p.nm,"_BV",rk,v)} cls="cl ce"/></div>
+<div style={{fontFamily:"var(--mn)",color:"var(--pu)",fontStyle:"italic"}}>{avoC?fm(avoC):"-"}</div>
+<div style={{fontFamily:"var(--mn)",color:"#c45e10"}}>{cTot?fm(cTot):""}</div>
+<div style={{fontFamily:"var(--mn)",color:"#c45e10"}}>{fm(cClaimed)}</div>
+<div style={{fontFamily:"var(--mn)",color:cTba<0?"var(--rd)":cTba>0?"var(--am)":"var(--gn)"}}>{cTot?fm(cTba):""}</div>
 {vis.map(m=><div key={m} className={(hovOn&&hovR===p.nm?"rh":"")+" "+(hovOn&&hovC===m?"ch":"")+(m===CUR_M?" cm-hl":"")} onMouseEnter={()=>{hovOn&&sHR(p.nm);hovOn&&sHC(m)}} onMouseLeave={()=>{sHR(null);sHC(null)}} style={m===CUR_M?{borderLeft:"2px solid var(--ac)",borderRight:"2px solid var(--ac)",background:"rgba(68,114,196,.06)"}:{}}><EC value={gv(p.nm,m,rk)} onChange={val=>uC(p.nm,m,rk,val)} cls="cl cc"/></div>)}</div>)}
 <div className="rg"><div className="rl">Gross Profit</div><div/><div/><div/>
 <div style={{fontFamily:"var(--mn)",color:p.gp<0?"var(--rd)":"var(--gn)"}}>{fm(p.gp)}</div><div/><div/>
