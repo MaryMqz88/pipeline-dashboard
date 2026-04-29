@@ -137,8 +137,8 @@ sSv(true);await aP({action:"updateCoordVO",user,row:v._r,field:m2[fd]||fd,value:
 
 const dVO=async(v)=>{if(!confirm("Delete VO: "+(v.vnm||v.pj||"entry")+"?"))return;sSv(true);await aP({action:"deleteCoordVO",user,row:v._r});sVo(prev=>prev.filter(x=>x._r!==v._r));sSv(false);load()};
 
-const pushVO=async(v)=>{if(v.pushed){alert("Already pushed on "+v.pushed);return}
-if(!confirm("Push \""+v.vnm+"\" to Master VO Register?"))return;
+const pushVO=async(v)=>{
+if(!confirm(v.pushed?"Re-push \""+v.vnm+"\" to update Master?":"Push \""+v.vnm+"\" to Master VO Register?"))return;
 sSv(true);await aP({action:"pushToMaster",user,row:v._r});
 sVo(prev=>prev.map(x=>x._r===v._r?{...x,pushed:new Date().toLocaleString("en-AU")}:x));
 sSv(false);load()};
@@ -202,7 +202,7 @@ voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);return<tr 
 <td style={{textAlign:"right"}}><EC value={v.oh} onChange={val=>uV(v.i,"oh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
 <td style={{textAlign:"right"}}><EC value={v.or2} onChange={val=>uV(v.i,"or2",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
 <td style={{textAlign:"center"}} onClick={()=>{setNoteEdit(v.i);setNoteText(v.notes||"")}}>{v.notes?<span title={v.notes} style={{cursor:"pointer",fontSize:14}}>💬</span>:<span style={{cursor:"pointer",color:"var(--t2)",fontSize:12}}>+</span>}</td>
-<td style={{textAlign:"center"}}>{v.pushed?<span className="push-btn done" title={"Pushed "+v.pushed}>✓</span>:<button className="push-btn" onClick={()=>pushVO(v)}>Push</button>}</td>
+<td style={{textAlign:"center"}}>{v.pushed?<button className="push-btn" onClick={()=>pushVO(v)} title={"Last pushed: "+v.pushed} style={{background:"var(--ac)"}}>Update</button>:<button className="push-btn" onClick={()=>pushVO(v)}>Push</button>}</td>
 </tr>})}
 </tbody></table></div></div>
 
