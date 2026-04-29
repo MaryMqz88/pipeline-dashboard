@@ -95,12 +95,13 @@ const[sa,sSa]=useState(false);
 const[nvo,sNvo]=useState({project:"",type:"VO",varNo:"",varName:"",ds:"",da:"",price:0,status:"",em:0,pf:0});
 
 const[filtPj,setFiltPj]=useState("");
+const[selRows,setSelRows]=useState(new Set());
 const[filtTy,setFiltTy]=useState("all");
 const[filtSt,setFiltSt]=useState([]);
 const[noteEdit,setNoteEdit]=useState(null);
 const[noteText,setNoteText]=useState("");
 
-const defCW=[24,130,60,70,140,90,90,85,170,80,80,80,60,60,60,60,60,50,70];
+const defCW=[24,28,130,60,70,140,90,90,85,170,80,80,80,60,60,60,60,60,50,70];
 const[colW,setColW]=useState(defCW);
 const startResize=(ci,e)=>{e.preventDefault();const startX=e.clientX;const startW=colW[ci];const onMove=e2=>{const diff=e2.clientX-startX;setColW(prev=>{const n=[...prev];n[ci]=Math.max(30,startW+diff);return n})};const onUp=()=>{document.removeEventListener("mousemove",onMove);document.removeEventListener("mouseup",onUp)};document.addEventListener("mousemove",onMove);document.addEventListener("mouseup",onUp)};
 
@@ -173,7 +174,7 @@ return<div className="app">
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:filtTy===t?"var(--ac)":"var(--bd)",background:filtTy===t?"var(--ac)":"transparent",color:filtTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
 <div style={{display:"flex",gap:2}}>{VO_ST.map(s=><button key={s.v} onClick={()=>setFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:filtSt.includes(s.v)?s.c:"var(--bd)",background:filtSt.includes(s.v)?s.c:"transparent",color:filtSt.includes(s.v)?"#fff":s.c,fontSize:8,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")}</button>)}</div>
 <input className="sx" placeholder="Search project..." value={filtPj} onChange={e=>setFiltPj(e.target.value)}/>
-<span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voFilt.length} of {vo.length} · Approved: {apCount}</span>
+<span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voFilt.length} of {vo.length} · Approved: {apCount}</span>{selRows.size>0&&<button className="pl gn" onClick={async()=>{if(!confirm("Push "+selRows.size+" selected VOs to Master?"))return;sSv(true);for(const r of selRows){const v=vo.find(x=>x._r===r);if(v){await aP({action:"pushToMaster",user,row:v._r});sVo(prev=>prev.map(x=>x._r===r?{...x,pushed:new Date().toLocaleString("en-AU")}:x))}}setSelRows(new Set());sSv(false);load()}}>{selRows.size} Push Selected</button>}
 </div>
 
 {/* Add form */}
@@ -187,11 +188,12 @@ return<div className="app">
 
 {/* Table */}
 <div className="vw"><div className="vsc"><table className="vt"><thead><tr>
-{["","Project","Type","Var No.","Name","Date Sub.","Date Appr.","Price","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"].map((h,ci)=><th key={h+ci} className={ci===0?"":ci<9?"tg":ci<12?"ty":ci<17?"tp":"tg"} style={{width:colW[ci],minWidth:30,...(ci>=7&&ci!==8?{textAlign:"right"}:{})}}>{h}{ci>0&&<div className="col-resize" onMouseDown={e=>startResize(ci,e)}/>}</th>)}
+{["","☐","Project","Type","Var No.","Name","Date Sub.","Date Appr.","Price","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"].map((h,ci)=><th key={h+ci} className={ci<2?"":ci<10?"tg":ci<13?"ty":ci<18?"tp":"tg"} style={{width:colW[ci],minWidth:30,...(ci>=8&&ci!==9?{textAlign:"right"}:{})}}>{h==="☐"?<input type="checkbox" checked={voFilt.length>0&&voFilt.every(v2=>selRows.has(v2._r))} onChange={e=>{if(e.target.checked){const n=new Set(selRows);voFilt.forEach(v2=>n.add(v2._r));setSelRows(n)}else{setSelRows(new Set())}}} style={{cursor:"pointer"}}/>:h}{ci>0&&<div className="col-resize" onMouseDown={e=>startResize(ci,e)}/>}</th>)}
 </tr></thead><tbody>
-{voFilt.length===0?<tr><td colSpan={19} style={{textAlign:"center",padding:20,color:"var(--t2)"}}>No entries.</td></tr>:
+{voFilt.length===0?<tr><td colSpan={20} style={{textAlign:"center",padding:20,color:"var(--t2)"}}>No entries.</td></tr>:
 voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);return<tr key={v.i} style={{color:rc}}>
 <td style={{textAlign:"center",padding:0,width:24}}><button onClick={()=>dVO(v)} style={{background:"none",border:"none",color:"var(--rd)",cursor:"pointer",fontSize:14,fontWeight:700,opacity:.4}} onMouseEnter={e=>e.target.style.opacity=1} onMouseLeave={e=>e.target.style.opacity=.4} title="Delete">×</button></td>
+<td style={{textAlign:"center",padding:0}}><input type="checkbox" checked={selRows.has(v._r)} onChange={e=>{const n=new Set(selRows);if(e.target.checked)n.add(v._r);else n.delete(v._r);setSelRows(n)}} style={{cursor:"pointer"}}/></td>
 <td><input list={"pl"+v.i} value={v.pj} onChange={e=>uV(v.i,"pj",e.target.value)} style={{color:rc,width:"100%"}}/><datalist id={"pl"+v.i}>{pj.map(p=><option key={p.nm} value={p.nm}/>)}</datalist></td>
 <td><select value={v.ty} onChange={e=>uV(v.i,"ty",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,width:"100%"}}><option>VO</option><option>DL</option></select></td>
 <td><input value={v.vn} onChange={e=>uV(v.i,"vn",e.target.value)} style={{color:rc}}/></td>
