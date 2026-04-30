@@ -58,24 +58,25 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .np{position:fixed;inset:0;background:#f4f6f9;display:flex;align-items:center;justify-content:center;z-index:99}
 .nin{font-size:14px;padding:8px 12px;border:2px solid var(--ac);border-radius:6px;outline:none;width:200px;font-family:var(--ft);color:var(--tx)}
 
-/* VO Register freeze panes */
-.vt th:nth-child(-n+6),.vt td:nth-child(-n+6){position:sticky;z-index:2}
-.vt th:nth-child(-n+6){z-index:3}
-.vt th:nth-child(1),.vt td:nth-child(1){left:0}
-.vt th:nth-child(2),.vt td:nth-child(2){left:24px}
-.vt th:nth-child(3),.vt td:nth-child(3){left:52px}
-.vt th:nth-child(4),.vt td:nth-child(4){left:182px}
-.vt th:nth-child(5),.vt td:nth-child(5){left:242px}
-.vt th:nth-child(6),.vt td:nth-child(6){left:312px;border-right:2px solid var(--bd)}
+/* VO freeze panes */
+.vt th:nth-child(1),.vt td:nth-child(1){position:sticky;left:0;z-index:2}
+.vt th:nth-child(2),.vt td:nth-child(2){position:sticky;left:24px;z-index:2}
+.vt th:nth-child(3),.vt td:nth-child(3){position:sticky;left:52px;z-index:2}
+.vt th:nth-child(4),.vt td:nth-child(4){position:sticky;left:182px;z-index:2}
+.vt th:nth-child(5),.vt td:nth-child(5){position:sticky;left:242px;z-index:2}
+.vt th:nth-child(6),.vt td:nth-child(6){position:sticky;left:312px;z-index:2;border-right:2px solid var(--bd)!important}
+.vt th:nth-child(-n+6){z-index:5;background:var(--s2)}
 .vt td:nth-child(-n+6){background:#fff}
 .vt tr:nth-child(even) td:nth-child(-n+6){background:#f8f9fb}
-.vt tr:hover td:nth-child(-n+6){background:rgba(68,114,196,.08)}
+.vt tr:hover td:nth-child(-n+6){background:rgba(68,114,196,.08)!important}
+.vt th{position:sticky;top:0;z-index:3}
+.vt th:nth-child(-n+6){z-index:5}
 </style></head><body><div id="root"></div>
 <script type="text/babel">
 const{useState,useEffect,useRef,useMemo,useCallback}=React;
 const API="https://script.google.com/macros/s/AKfycbxZSeOefNZ7nPHiq_Y7ZJNUnIGgfXe8p89KNGLQWhyNdS1SDFy0ZZu5_MdWyc1jrrpFDw/exec";
 
-const USERS=["Lizzie","Lachlan","Luka"];
+const USERS=["Lachlan","Lizzie","Luka"];
 
 function fmP(v){if(!v&&v!==0)return"";return"$"+Number(v).toLocaleString("en-AU",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmN(v){if(!v&&v!==0)return"";return Math.round(Number(v)).toLocaleString("en-AU")}
