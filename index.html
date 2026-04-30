@@ -548,14 +548,14 @@ return<div className={"rw r"+(ri+1)} key={rk}><div className="rl">{RN[ri]}</div>
 {(()=>{let pfs=comp.filter(p=>{const pfCon=gv(p.nm,"_BC","ProfabMaterials");const pfVar=gv(p.nm,"_BV","ProfabMaterials");const pfVO=voPfab[nk(p.nm)]||0;return(pfCon+pfVar+pfVO+p.pT)>0});if(pfStFilt.length>0)pfs=pfs.filter(p=>pfStFilt.includes(p.st));if(pfSr)pfs=pfs.filter(p=>p.nm.toLowerCase().includes(pfSr.toLowerCase()));return pfs.map(p=>{
 const pfCon=gv(p.nm,"_BC","ProfabMaterials");const pfVar=gv(p.nm,"_BV","ProfabMaterials");const pfVO=voPfab[nk(p.nm)]||0;const pfTot=pfCon+pfVar+pfVO;const pfAlloc=p.pT;const pfTba=pfTot-pfAlloc;
 return<div className="pr pr-pf" key={p.i}>
-<div style={{textAlign:"left",position:"sticky",left:0,zIndex:3,background:"#fff",fontFamily:"var(--ft)",color:"var(--ac)",fontSize:9,fontWeight:700,padding:"4px 6px",display:"flex",alignItems:"center",gap:4}}><span className={"st-tag "+(p.st==="Live"?"st-live":p.st==="Pending"?"st-pend":p.st==="Awarded"?"st-awd":"st-done")} style={{fontSize:7}}>{p.st==="Live"?"LIVE":p.st==="Pending"?"PEND":p.st==="Awarded"?"AWRD":"DONE"}</span>{p.nm}</div>
-<div style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px"}}>{pfCon?fm(pfCon):""}</div>
-<div style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px"}}>{pfVar?fm(pfVar):""}</div>
-<div style={{fontFamily:"var(--mn)",fontSize:9,color:"var(--pu)",fontStyle:"italic",textAlign:"right",padding:"4px 6px"}}>{pfVO?fm(pfVO):"-"}</div>
+<div style={{textAlign:"left",position:"sticky",left:0,zIndex:3,background:"#fff",fontFamily:"var(--ft)",color:"var(--ac)",fontSize:9,fontWeight:700,padding:"4px 6px",display:"flex",alignItems:"center",gap:4}} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)}><span className={"st-tag "+(p.st==="Live"?"st-live":p.st==="Pending"?"st-pend":p.st==="Awarded"?"st-awd":"st-done")} style={{fontSize:7}}>{p.st==="Live"?"LIVE":p.st==="Pending"?"PEND":p.st==="Awarded"?"AWRD":"DONE"}</span>{p.nm}</div>
+<div style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px"}} className={hovOn&&hovR===p.nm?"rh":""} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)}>{pfCon?fm(pfCon):""}</div>
+<div style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px"}} className={hovOn&&hovR===p.nm?"rh":""} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)}>{pfVar?fm(pfVar):""}</div>
+<div style={{fontFamily:"var(--mn)",fontSize:9,color:"var(--pu)",fontStyle:"italic",textAlign:"right",padding:"4px 6px"}} className={hovOn&&hovR===p.nm?"rh":""} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)}>{pfVO?fm(pfVO):"-"}</div>
 <div style={{fontFamily:"var(--mn)",fontSize:9,fontWeight:800,textAlign:"right",padding:"4px 6px"}}>{(pfTot||pfAlloc)?fm(pfTot):""}</div>
-<div style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px"}}>{fm(pfAlloc)}</div>
-<div style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px",color:pfTba<0?"var(--rd)":pfTba>0?"var(--am)":"var(--gn)"}}>{(pfTot||pfAlloc)?fm(pfTba):""}</div>
-{vis.map(m=>{const val=gv(p.nm,m,"ProfabMaterials");return<div key={m} style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px",...(m===CUR_M?{borderLeft:"2px solid var(--ac)",borderRight:"2px solid var(--ac)",background:"rgba(68,114,196,.06)"}:{})}}>{val?fm(val):""}</div>})}
+<div style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px"}} className={hovOn&&hovR===p.nm?"rh":""} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)}>{fm(pfAlloc)}</div>
+<div style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px",color:pfTba<0?"var(--rd)":pfTba>0?"var(--am)":"var(--gn)"}} className={hovOn&&hovR===p.nm?"rh":""} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)}>{(pfTot||pfAlloc)?fm(pfTba):""}</div>
+{vis.map(m=>{const val=gv(p.nm,m,"ProfabMaterials");return<div key={m} className={hovOn&&hovR===p.nm?"rh":""} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)} style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px",...(m===CUR_M?{borderLeft:"2px solid var(--ac)",borderRight:"2px solid var(--ac)",background:"rgba(68,114,196,.06)"}:{})}}>{val?fm(val):""}</div>})}
 </div>})})()}
 </div></div>
 {/* No. of Weeks */}
