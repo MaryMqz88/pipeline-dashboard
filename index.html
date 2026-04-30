@@ -211,6 +211,9 @@
 .pg:nth-child(even) .rw>div,.pg:nth-child(even) .rg>div{background:#fff!important}
 
 .app div.sel-cell{outline:2px solid var(--ac)!important;background:rgba(68,114,196,.12)!important}
+
+.sum-body .g>div:nth-child(1),.sum-body .sr>div:first-child,.sum-body .sr-t>div:first-child,.sum-body .sr-c>div:first-child,.sum-body .sr-e>div:first-child{position:sticky;left:0;z-index:4;background:var(--s1)}
+.sum-body .slbl{position:sticky;left:0;z-index:4;background:var(--s1);min-width:240px}
 /* Column separators - light grey gridlines */
 .gh>div{border-right:1px solid #e8eaef}
 .pr>div{border-right:1px solid #e8eaef}
@@ -325,7 +328,7 @@ const handleSumHover=(e,enter)=>{
   if(cell){sHR(cell.dataset.sr);if(cell.dataset.sc)sHC(cell.dataset.sc)}
 };
 
-const[pjO,sPjO]=useState(true);const[acO,sAcO]=useState(true);
+const[pjO,sPjO]=useState(false);const[acO,sAcO]=useState(false);
 const defCW=[24,130,60,70,140,90,90,85,170,80,80,80,60,60,60,60,60,50];
 const[colW,setColW]=useState(defCW);
 const resRef=useRef(null);
@@ -528,8 +531,8 @@ return<div className={"rw r"+(ri+1)} key={rk}><div className="rl">{RN[ri]}</div>
 {/* PFAB Cards */}
 <div className="cds"><div className="cd">
 <div className="cl2">Total Revenue</div>
-<div className="cv">{fK(selM.length>0?comp.reduce((t,p)=>t+selM.reduce((s,m)=>s+gv(p.nm,m,"ProfabMaterials"),0),0):comp.reduce((t,p)=>t+gv(p.nm,"_BC","ProfabMaterials")+gv(p.nm,"_BV","ProfabMaterials")+(voPfab[nk(p.nm)]||0),0))}</div>
-<div className="cl3">{selM.length?selM.join(", "):"All projects"}</div>
+<div className="cv">{fK(selM.length>0?comp.filter(p=>selM.some(m=>gv(p.nm,m,"ProfabMaterials")>0)).reduce((t,p)=>t+gv(p.nm,"_BC","ProfabMaterials")+gv(p.nm,"_BV","ProfabMaterials")+(voPfab[nk(p.nm)]||0),0):comp.reduce((t,p)=>t+gv(p.nm,"_BC","ProfabMaterials")+gv(p.nm,"_BV","ProfabMaterials")+(voPfab[nk(p.nm)]||0),0))}</div>
+<div className="cl3">{selM.length?comp.filter(p=>selM.some(m=>gv(p.nm,m,"ProfabMaterials")>0)).length+" projects · "+selM.join(", "):"All projects"}</div>
 </div></div>
 {/* Toolbar */}
 <div className="br">
