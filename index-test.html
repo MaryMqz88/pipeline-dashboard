@@ -2,6 +2,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f4f6f9;--s1:#ffffff;--s2:#edf0f5;--s3:#e2e6ed;--bd:#cdd3de;--tx:#1e2330;--t2:#6b7489;--ac:#4472c4;--a2:#3560b5;--gn:#1a9a6b;--am:#a07008;--rd:#dc4a4a;--pu:#a78bfa;--ft:'Outfit',sans-serif;--mn:'Aptos','Calibri','Segoe UI',sans-serif}
@@ -348,6 +349,11 @@ div.rh{background:#dce6f5!important}
 <script type="text/babel">
 const{useState,useMemo,useEffect,useCallback,useRef,useDeferredValue}=React;
 const API="https://gqcemmuntzddkdwzqenq.supabase.co/functions/v1/api";
+// ===== Supabase Realtime =====
+// Anon key is the PUBLIC API key from Supabase Dashboard → Project Settings → API → "anon public".
+// It only allows websocket subscriptions (read-only); all writes still go through the Edge Function with passphrase auth.
+const SUPABASE_URL="https://gqcemmuntzddkdwzqenq.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxY2VtbXVudHpkZGtkd3pxZW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTg1NjIsImV4cCI6MjA5MzY5NDU2Mn0.NwyQC3dmI6LQTLEHzDLaQLv274LcjKag1Zzgssf11aQ";
 const DEF_MO=["Jan-25","Feb-25","Mar-25","Apr-25","May-25","Jun-25","Jul-25","Aug-25","Sep-25","Oct-25","Nov-25","Dec-25","Jan-26","Feb-26","Mar-26","Apr-26","May-26","Jun-26","Jul-26","Aug-26","Sep-26","Oct-26","Nov-26","Dec-26"];
 const RN=["External Materials","ProFab Materials","Other Costs"];
 const RK=["ExtMaterials","ProfabMaterials","OtherCosts"];
@@ -563,8 +569,22 @@ const[actOpen,setActOpen]=useState(false);
 const[actData,setActData]=useState({presence:[],activity:[]});
 // Heartbeat: ping every 60s while logged in (lock-free on server)
 useEffect(()=>{if(!un||!pp)return;const ping=()=>{fetch(API+"?action=heartbeat&user="+encodeURIComponent(un)+"&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).catch(()=>{})};ping();const id=setInterval(ping,60000);return()=>clearInterval(id)},[un,pp]);
-// Auto-refresh: silently reload data every 10s so changes from other users appear without manual sync
-useEffect(()=>{if(!un||!pp)return;const id=setInterval(()=>load(true),10000);return()=>clearInterval(id)},[un,pp,load]);
+// Realtime: subscribe to DB changes via websocket and silently refresh on any change.
+// Replaces polling — only fires when something actually changes, much cheaper.
+useEffect(()=>{if(!un||!pp)return;
+  if(SUPABASE_ANON_KEY==="PASTE_ANON_KEY_HERE"){console.warn("Realtime disabled: SUPABASE_ANON_KEY not set");return}
+  const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  let dt=null;const triggerReload=()=>{if(dt)clearTimeout(dt);dt=setTimeout(()=>load(true),500)};
+  const ch=sb.channel("app-changes")
+    .on("postgres_changes",{event:"*",schema:"public",table:"variations"},triggerReload)
+    .on("postgres_changes",{event:"*",schema:"public",table:"projects"},triggerReload)
+    .on("postgres_changes",{event:"*",schema:"public",table:"monthly"},triggerReload)
+    .on("postgres_changes",{event:"*",schema:"public",table:"cell_colors"},triggerReload)
+    .on("postgres_changes",{event:"*",schema:"public",table:"monthly_locks"},triggerReload)
+    .on("postgres_changes",{event:"*",schema:"public",table:"project_budgets"},triggerReload)
+    .subscribe();
+  return()=>{if(dt)clearTimeout(dt);sb.removeChannel(ch)};
+},[un,pp,load]);
 // Refresh activity every 30s while panel is open
 useEffect(()=>{if(!actOpen)return;let cancelled=false;const refresh=async()=>{const r=await aG("getActivity");if(!cancelled&&r&&!r.error)setActData(r)};refresh();const id=setInterval(refresh,30000);return()=>{cancelled=true;clearInterval(id)}},[actOpen]);
 // "Live" presence count for the header badge — refresh every 60s independently
@@ -624,7 +644,7 @@ const gC="240px 72px 62px 65px 72px 72px 65px "+vis.map(()=>"72px").join(" ");
  
 return<div className="app" onClick={e=>{if(e.target.closest('button,input,select,a'))return;const el=e.target.closest('.cl')||e.target;const txt=(el.textContent||'').replace(/[$,]/g,'').trim();const v=parseFloat(txt);if(!isNaN(v)&&v!==0&&txt.length<15){if(e.ctrlKey||e.metaKey){setSelCells(prev=>[...prev,v])}else{setSelCells([v])}}}}>
 <div className="hd"><div className="hl"><button className="sb-toggle" onClick={()=>sSbO(true)}>☰</button><h1>{vw==="grid"?"PMC & PF Pipeline":vw==="pfab"?"PFAB Pipeline":vw==="coord"?coordUser+"\u2019s VO Register":vw==="settings"?"Project Settings":"Variation Register"}</h1><span className="dot" style={{background:saveErr?"#d9534f":sv?"var(--am)":cached?"var(--rd)":"var(--gn)"}}/><span className="dx" style={{color:saveErr?"#d9534f":sv?"var(--am)":cached?"var(--rd)":"var(--gn)",cursor:saveErr?"pointer":"default",fontWeight:saveErr?700:400}} onClick={saveErr?()=>{setSaveErr(null);load()}:undefined} title={saveErr||""}>{saveErr?"⚠ Save failed - click to retry":sv?"Saving...":cached?"Offline":"Connected"}</span></div>
-<div className="hr"><button className="act-btn" onClick={()=>setActOpen(true)} title="See who's active and recent edits">👥 {liveCount>0&&<span className="act-btn-count">{liveCount}</span>}</button><span className="ub">👤 {un}</span>{ls&&<span className="svt">{ls.toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit"})}</span>}<button className="rb" onClick={()=>setHovOn(!hovOn)} style={{color:hovOn?"var(--ac)":"var(--t2)"}}>{hovOn?"◉":"○"} Hover</button><button className="rb" onClick={load}>↻ Sync</button></div></div>
+<div className="hr"><button className="act-btn" onClick={()=>setActOpen(true)} title="See who's active and recent edits">👥 {liveCount>0&&<span className="act-btn-count">{liveCount}</span>}</button><span className="ub">👤 {un}</span>{ls&&<span className="svt">{ls.toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit"})}</span>}<button className="rb" onClick={()=>setHovOn(!hovOn)} style={{color:hovOn?"var(--ac)":"var(--t2)"}}>{hovOn?"◉":"○"} Hover</button></div></div>
 {/* ACTIVITY PANEL */}
 <div className={"act-overlay"+(actOpen?" open":"")} onClick={()=>setActOpen(false)}/>
 <div className={"act-panel"+(actOpen?" open":"")}>
