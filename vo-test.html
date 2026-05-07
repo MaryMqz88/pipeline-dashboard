@@ -37,8 +37,8 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .vt td{padding:4px 8px;border:1px solid var(--bd);background:#fff}
 /* Browser-level virtualization — skips rendering rows outside the viewport */
 .vt tbody tr{content-visibility:auto;contain-intrinsic-size:auto 24px}
-.vt tr:nth-child(even) td{background:#f8f9fb}
-.vt tr:hover td{background:rgba(68,114,196,.08)}
+.vt tr:nth-child(even) td{background:#f8f9fb!important}
+.vt tr:hover td{background:rgba(68,114,196,.10)!important}
 .vt input,.vt select{background:transparent;border:none;color:var(--tx);padding:2px 0;font-family:var(--mn);font-size:10px;outline:none;width:100%;box-sizing:border-box}
 .vt input:focus,.vt select:focus{background:rgba(68,114,196,.06);border-bottom:1px solid var(--ac)}
 
@@ -67,9 +67,9 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 
 .vt th:nth-child(-n+7){z-index:5;background:var(--s2)}
 .vt td:nth-child(-n+7){background:#fff}
-.vt tr:nth-child(even) td:nth-child(-n+7){background:#f8f9fb}
-.vt tr:hover td:nth-child(-n+7){background:#e8eef9!important}
-.vt tr:nth-child(even):hover td:nth-child(-n+7){background:#dde5f3!important}
+.vt tr:nth-child(even) td:nth-child(-n+8){background:#f8f9fb!important}
+.vt tr:hover td:nth-child(-n+8){background:#e8eef9!important}
+.vt tr:nth-child(even):hover td:nth-child(-n+8){background:#dde5f3!important}
 .vt th{position:sticky;top:0;z-index:3}
 
 .vo-cards{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;flex-shrink:0}
@@ -170,10 +170,12 @@ const[colW,setColW]=useState(defCW);
 const startResize=(ci,e)=>{e.preventDefault();const startX=e.clientX;const startW=colW[ci];const onMove=e2=>{const diff=e2.clientX-startX;setColW(prev=>{const n=[...prev];n[ci]=Math.max(30,startW+diff);return n})};const onUp=()=>{document.removeEventListener("mousemove",onMove);document.removeEventListener("mouseup",onUp)};document.addEventListener("mousemove",onMove);document.addEventListener("mouseup",onUp)};
 
 function getPP(){try{return localStorage.getItem("pipeline-pp-coord")||""}catch{return""}}
-async function aP(p){try{const pp=getPP();const body={...p};if(pp)body.passphrase=pp;const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const d=await r.json();if(d&&d.error){alert("⚠ Server error: "+d.error+(d.message?"\n\n"+d.message:""));return false}return true}catch(e){alert("⚠ Network error: "+e.message);return false}}
+async function aP(p){try{const pp=getPP();const body={...p};if(pp)body.passphrase=pp;const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const d=await r.json();if(d&&d.error){alert("⚠ Server error: "+d.error+(d.message?"\n\n"+d.message:""));return d}if(d&&d.warning){alert("⚠ "+d.warning)}return d||true}catch(e){alert("⚠ Network error: "+e.message);return false}}
 
-const load=useCallback(async(silent)=>{if(!silent)sLd(true);sEr(null);try{const pp=getPP();const r=await fetch(API+"?action=getCoordVO&user="+encodeURIComponent(user)+(pp?"&passphrase="+encodeURIComponent(pp):""));const d=await r.json();if(d.error){if(d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp-coord")}catch{};setPp("");sEr("Wrong coordinator passphrase. Please re-enter.");sLd(false);return}sEr(d.error);sLd(false);return}
-const vD=d.vos||[];const pD=d.projects||[];
+const load=useCallback(async(silent)=>{if(!silent)sLd(true);sEr(null);try{const pp=getPP();const r=await fetch(API+"?action=getVariations&user="+encodeURIComponent(user)+(pp?"&passphrase="+encodeURIComponent(pp):""));const d=await r.json();if(d.error){if(d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp-coord")}catch{};setPp("");sEr("Wrong coordinator passphrase. Please re-enter.");sLd(false);return}sEr(d.error);sLd(false);return}
+const vD=d.variations||d.vos||[];
+// Project list comes from a separate getAll call so the +Add picker has all options.
+let pD=[];try{const r2=await fetch(API+"?action=getAll"+(pp?"&passphrase="+encodeURIComponent(pp):""));const d2=await r2.json();if(d2&&!d2.error)pD=d2.projects||[]}catch{}
 sPj(pD.map(p=>({nm:String(F(p,"Project","PROJECT")).trim()})).filter(p=>!p.nm.startsWith("_")));
 sVo(vD.map((v,i)=>({i,_r:v._row!==undefined?v._row:i,
 vid:String(F(v,"VO_ID")||""),
@@ -196,7 +198,9 @@ nr:N(F(v,"NORMAL RATE")),
 oh:N(F(v,"OVERTIME HOURS")),
 or2:N(F(v,"OVERTIME RATE")),
 notes:String(F(v,"NOTES","Notes")||""),
-pushed:String(F(v,"PUSHED","")||""),
+creator:String(F(v,"CREATOR")||""),
+pushedAt:String(F(v,"PUSHED AT")||""),
+pushedBy:String(F(v,"PUSHED BY")||""),
 eb:String(F(v,"EditedBy","EDITED BY")||""),
 ea:String(F(v,"EditedAt","EDITED AT")||"")
 })));
@@ -212,20 +216,25 @@ useEffect(()=>{if(!actOpen)return;let cancelled=false;const refresh=async()=>{tr
 const tAgo=(ts)=>{if(!ts)return"";const d=Date.now()-new Date(ts).getTime();if(d<60000)return"just now";if(d<3600000)return Math.floor(d/60000)+" min ago";if(d<86400000)return Math.floor(d/3600000)+"h ago";return Math.floor(d/86400000)+"d ago"};
 
 const calcDLPrice=(v,fd,val)=>{const u={...v,[fd]:val};const m=N(u.nmn)||1;return(m*N(u.nh)*N(u.nr))+(m*N(u.oh)*N(u.or2))};
-const uV=useCallback(async(vi,fd,val)=>{const v=vo[vi];if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}const autoP=v.ty==="DL"&&["nmn","nh","nr","oh","or2"].includes(fd);const newPr=autoP?calcDLPrice(v,fd,val):null;sVo(pr=>pr.map((x,i)=>i===vi?{...x,[fd]:val,...(autoP?{pr:newPr}:{})}:x));
+const uV=useCallback(async(vi,fd,val)=>{const v=vo[vi];if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
+// Status revert warning: changing FROM Fully/Partially Claimed
+if(fd==="st"){const oldStL=String(v.st||"").toLowerCase();if((oldStL.includes("fully claimed")||oldStL.includes("partially claimed"))&&val!==v.st){if(!confirm("⚠️ Please double check.\n\nThis VO is currently marked \""+v.st+"\". Are you sure you want to change it to \""+val+"\"?\n\nReverting a claimed status can affect the audit trail."))return}}
+const autoP=v.ty==="DL"&&["nmn","nh","nr","oh","or2"].includes(fd);const newPr=autoP?calcDLPrice(v,fd,val):null;sVo(pr=>pr.map((x,i)=>i===vi?{...x,[fd]:val,...(autoP?{pr:newPr}:{}),ea:new Date().toISOString()}:x));
 const m2={"pj":"PROJECT","area":"AREA ON JOB","ty":"TYPE","vn":"VARIATION NO.","srn":"SUB REF NO.","vnm":"VARIATION NAME","ds":"DATE SUBMITTED","da":"DATE APPROVED","pr":"PRICE","claim":"CLAIM %","st":"STATUS","em":"EXTERNAL MATERIALS","pf":"PFAB MATERIALS","nmn":"NO. OF MEN","nh":"NORMAL HOURS","nr":"NORMAL RATE","oh":"OVERTIME HOURS","or2":"OVERTIME RATE","notes":"NOTES"};
-sSv(true);await enq(()=>aP({action:"updateCoordVO",user,voId:v.vid,project:v.pj,varNo:v.vn,varName:v.vnm,row:v._r,field:m2[fd]||fd,value:val,editedBy:identity,editedAt:new Date().toLocaleString("en-AU")}));if(autoP)await enq(()=>aP({action:"updateCoordVO",user,voId:v.vid,project:v.pj,varNo:v.vn,varName:v.vnm,row:v._r,field:"PRICE",value:newPr,editedBy:identity,editedAt:new Date().toLocaleString("en-AU")}));sSv(false)},[vo,user,identity]);
+sSv(true);await enq(()=>aP({action:"updateVariation",voId:v.vid,field:m2[fd]||fd,value:val,editedBy:identity,editedAt:new Date().toLocaleString("en-AU")}));if(autoP)await enq(()=>aP({action:"updateVariation",voId:v.vid,field:"PRICE",value:newPr,editedBy:identity,editedAt:new Date().toLocaleString("en-AU")}));sSv(false)},[vo,user,identity]);
 
-const dVO=async(v)=>{if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish syncing, then try again.");return}const stL=String(v.st||"").toLowerCase();if(stL.indexOf("fully claimed")!==-1||stL.indexOf("partially claimed")!==-1){alert("⛔ Cannot delete this VO.\n\nThis VO has been marked as \""+v.st+"\" in the Master VO Register.\n\nClaimed VOs are locked to protect the audit trail. If this needs to be removed, contact an admin.");return}if(!confirm("Delete VO: "+(v.vnm||v.pj||"entry")+"?\n\nThis will also remove it from the Master VO Register if it exists there."))return;sSv(true);sVo(prev=>prev.filter(x=>v.vid?x.vid!==v.vid:x.i!==v.i));await enq(()=>aP({action:"deleteCoordVO",user,voId:v.vid,project:v.pj,varNo:v.vn,varName:v.vnm,row:v._r}));sSv(false)};
+const dVO=async(v)=>{if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish syncing, then try again.");return}const stL=String(v.st||"").toLowerCase();if(stL.indexOf("fully claimed")!==-1||stL.indexOf("partially claimed")!==-1){alert("⛔ Cannot delete this VO.\n\nThis VO has been marked as \""+v.st+"\".\n\nClaimed VOs are locked to protect the audit trail. If this needs to be removed, contact an admin.");return}if(!confirm("Delete VO: "+(v.vnm||v.pj||"entry")+"?"))return;sSv(true);sVo(prev=>prev.filter(x=>v.vid?x.vid!==v.vid:x.i!==v.i));await enq(()=>aP({action:"deleteVariation",voId:v.vid}));sSv(false)};
 
 const pushVO=async(v)=>{
-if(!confirm(v.pushed?"Re-push \""+v.vnm+"\" to update Master?":"Push \""+v.vnm+"\" to Master VO Register?"))return;
+const wasPushed=!!v.pushedAt;
+if(!confirm(wasPushed?"Re-push \""+v.vnm+"\" to update Master?":"Push \""+v.vnm+"\" to Master VO Register?"))return;
 sSv(true);
-sVo(prev=>prev.map(x=>(v.vid?x.vid===v.vid:x.i===v.i)?{...x,pushed:new Date().toLocaleString("en-AU")}:x));
-await enq(()=>aP({action:"pushToMaster",user,voId:v.vid,project:v.pj,varNo:v.vn,varName:v.vnm,row:v._r}));
+const now=new Date().toISOString();
+sVo(prev=>prev.map(x=>(v.vid?x.vid===v.vid:x.i===v.i)?{...x,pushedAt:now,pushedBy:identity,ea:now}:x));
+await enq(()=>aP({action:"pushVariation",voId:v.vid}));
 sSv(false)};
 
-const addV=async()=>{if(!nvo.project)return;sSv(true);sSa(false);const newVo={...nvo};sNvo({project:"",type:"VO",varNo:"",varName:"",ds:"",da:"",price:0,status:"",em:0,pf:0});const fullVarNo=(newVo.type==="DL"?"DL-":"VO-")+newVo.varNo;enq(()=>aP({action:"addCoordVO",user,project:newVo.project,type:newVo.type,varNo:fullVarNo,varName:newVo.varName,dateSubmitted:newVo.ds,dateApproved:newVo.da,price:newVo.price,status:newVo.status,extMaterials:newVo.em,pfabMaterials:newVo.pf,margin:newVo.price-newVo.em-newVo.pf,notes:"",editedBy:identity,editedAt:new Date().toLocaleString("en-AU")}));setTimeout(()=>{load(true).then(()=>sSv(false))},2000)};
+const addV=async()=>{if(!nvo.project)return;sSv(true);sSa(false);const newVo={...nvo};sNvo({project:"",type:"VO",varNo:"",varName:"",ds:"",da:"",price:0,status:"",em:0,pf:0});const fullVarNo=(newVo.type==="DL"?"DL-":"VO-")+newVo.varNo;enq(()=>aP({action:"addVariation",creator:user,project:newVo.project,type:newVo.type,varNo:fullVarNo,varName:newVo.varName,dateSubmitted:newVo.ds,dateApproved:newVo.da,price:newVo.price,status:newVo.status,extMaterials:newVo.em,pfabMaterials:newVo.pf,claimPct:"",areaOnJob:"",notes:"",editedBy:identity,editedAt:new Date().toLocaleString("en-AU")}));setTimeout(()=>{load(true).then(()=>sSv(false))},2000)};
 
 const voFilt=useMemo(()=>{let f=vo;if(filtPj_d)f=f.filter(v=>v.pj.toLowerCase().includes(filtPj_d.toLowerCase()));if(filtTy_d!=="all")f=f.filter(v=>v.ty===filtTy_d);if(filtSt_d.length>0)f=f.filter(v=>filtSt_d.some(s=>v.st.toLowerCase().includes(s.toLowerCase())));return f.slice().sort((a,b)=>{const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad})},[vo,filtPj_d,filtTy_d,filtSt_d]);
 
@@ -277,7 +286,7 @@ return<div className="app">
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:filtTy===t?"var(--ac)":"var(--bd)",background:filtTy===t?"var(--ac)":"transparent",color:filtTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
 <div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=vo.filter(v=>{const pjM=!filtPj||v.pj.toLowerCase().includes(filtPj.toLowerCase());const tyM=filtTy==="all"||v.ty===filtTy;return pjM&&tyM&&v.st.toLowerCase().includes(s.v.toLowerCase().split(" - ")[0].split(" ")[0])}).length;return<button key={s.v} onClick={()=>setFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:filtSt.includes(s.v)?s.c:"var(--bd)",background:filtSt.includes(s.v)?s.c:"transparent",color:filtSt.includes(s.v)?"#fff":s.c,fontSize:8,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 <input className="sx" placeholder="Search project..." value={filtPj} onChange={e=>setFiltPj(e.target.value)}/>
-<span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voFilt.length} of {vo.length} · Approved: {apCount}</span>{selRows.size>0&&<button className="pl gn" onClick={async()=>{if(!confirm("Push "+selRows.size+" selected VOs to Master?"))return;sSv(true);for(const r of selRows){const v=vo.find(x=>x._r===r);if(v){sVo(prev=>prev.map(x=>(v.vid?x.vid===v.vid:x._r===r)?{...x,pushed:new Date().toLocaleString("en-AU")}:x));await enq(()=>aP({action:"pushToMaster",user,voId:v.vid,project:v.pj,varNo:v.vn,varName:v.vnm,row:v._r}))}}setSelRows(new Set());sSv(false)}}>{selRows.size} Push Selected</button>}
+<span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voFilt.length} of {vo.length} · Approved: {apCount}</span>{selRows.size>0&&<button className="pl gn" onClick={async()=>{if(!confirm("Push "+selRows.size+" selected VOs to Master?"))return;sSv(true);const now=new Date().toISOString();for(const r of selRows){const v=vo.find(x=>x._r===r);if(v){sVo(prev=>prev.map(x=>(v.vid?x.vid===v.vid:x._r===r)?{...x,pushedAt:now,pushedBy:identity}:x));await enq(()=>aP({action:"pushVariation",voId:v.vid}))}}setSelRows(new Set());sSv(false)}}>{selRows.size} Push Selected</button>}
 </div>
 
 {/* Add form */}
@@ -317,7 +326,7 @@ voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="
 <td style={{textAlign:"right"}}><EC value={v.oh} onChange={val=>uV(v.i,"oh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
 <td style={{textAlign:"right"}}><EC value={v.or2} onChange={val=>uV(v.i,"or2",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
 <td style={{textAlign:"center"}} onClick={()=>{setNoteEdit(v.i);setNoteText(v.notes||"")}}>{v.notes?<span title={v.notes} style={{cursor:"pointer",fontSize:14}}>💬</span>:<span style={{cursor:"pointer",color:"var(--t2)",fontSize:12}}>+</span>}</td>
-<td style={{textAlign:"center"}}>{v.pushed==="from master"?<span style={{fontSize:8,color:"var(--t2)",fontStyle:"italic"}}>Master</span>:v.pushed?<button className="push-btn" onClick={()=>pushVO(v)} title={"Last pushed: "+v.pushed} style={{background:"var(--ac)"}}>Update</button>:<button className="push-btn" onClick={()=>pushVO(v)}>Push</button>}</td>
+<td style={{textAlign:"center"}}>{(()=>{const needsPush=(()=>{if(!v.pushedAt)return true;if(!v.ea)return false;try{const ea=new Date(v.ea).getTime(),pa=new Date(v.pushedAt).getTime();if(isNaN(ea)||isNaN(pa))return false;return ea>pa}catch{return false}})();return needsPush?<button className="push-btn" onClick={()=>pushVO(v)} style={{background:"var(--gn)"}} title={v.pushedAt?"Has unpushed changes — last pushed by "+(v.pushedBy||"?")+" on "+fmD(v.pushedAt):"Draft — not yet pushed"}>Push</button>:<span style={{fontSize:9,color:"var(--t2)",cursor:"help"}} title={"Pushed by "+(v.pushedBy||"?")+" on "+v.pushedAt}>Pushed {fmD(v.pushedAt)}</span>})()}</td>
 </tr>})}
 </tbody></table></div></div>
 
