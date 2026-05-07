@@ -2,6 +2,7 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f4f6f9;--s1:#ffffff;--s2:#edf0f5;--s3:#e2e6ed;--bd:#cdd3de;--tx:#1e2330;--t2:#6b7489;--ac:#4472c4;--a2:#3560b5;--rd:#dc4a4a;--gn:#1a9a6b;--am:#a07008;--pu:#7c3aed;--ft:'Outfit',sans-serif;--mn:'Aptos','Calibri','Segoe UI',sans-serif}
@@ -102,6 +103,8 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 <script type="text/babel">
 const{useState,useEffect,useRef,useMemo,useCallback,useDeferredValue}=React;
 const API="https://gqcemmuntzddkdwzqenq.supabase.co/functions/v1/api";
+const SUPABASE_URL="https://gqcemmuntzddkdwzqenq.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxY2VtbXVudHpkZGtkd3pxZW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTg1NjIsImV4cCI6MjA5MzY5NDU2Mn0.NwyQC3dmI6LQTLEHzDLaQLv274LcjKag1Zzgssf11aQ";
 
 const USERS=["Luka","Lizzie","Lachlan"];
 
@@ -209,6 +212,17 @@ sLd(false)}catch(e){sEr("Failed to connect: "+e.message);sLd(false)}},[user]);
 useEffect(()=>{if(user)load()},[user,load]);
 // Heartbeat: ping every 60s while logged in (lock-free on server)
 useEffect(()=>{if(!identity||!pp)return;const ping=()=>{fetch(API+"?action=heartbeat&user="+encodeURIComponent(identity)+"&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).catch(()=>{})};ping();const id=setInterval(ping,60000);return()=>clearInterval(id)},[identity,pp]);
+// Realtime: subscribe to DB changes via websocket and silently refresh on any change.
+useEffect(()=>{if(!user||!pp)return;
+  if(SUPABASE_ANON_KEY==="PASTE_ANON_KEY_HERE"){console.warn("Realtime disabled: SUPABASE_ANON_KEY not set");return}
+  const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  let dt=null;const triggerReload=()=>{if(dt)clearTimeout(dt);dt=setTimeout(()=>load(true),500)};
+  const ch=sb.channel("vo-changes")
+    .on("postgres_changes",{event:"*",schema:"public",table:"variations"},triggerReload)
+    .on("postgres_changes",{event:"*",schema:"public",table:"projects"},triggerReload)
+    .subscribe();
+  return()=>{if(dt)clearTimeout(dt);sb.removeChannel(ch)};
+},[user,pp,load]);
 // Activity panel — recent edits only (no presence list)
 const[actOpen,setActOpen]=useState(false);
 const[actData,setActData]=useState({activity:[]});
@@ -260,7 +274,7 @@ if(!user)return<div className="np"><div style={{textAlign:"center"}}><h2 style={
 
 return<div className="app">
 <div className="hd"><div className="hl"><h1>Variation Register — {user}</h1>{user!==identity&&<span style={{fontSize:9,color:"var(--am)",fontWeight:700,marginLeft:4}}>(edited by {identity})</span>}<span className="dot" style={{background:saveErr?"#d9534f":sv?"var(--am)":"var(--gn)"}}/><span className="dx" style={{color:saveErr?"#d9534f":sv?"var(--am)":"var(--gn)",cursor:saveErr?"pointer":"default",fontWeight:saveErr?700:400}} onClick={saveErr?()=>{setSaveErr(null);load()}:undefined} title={saveErr||""}>{saveErr?"⚠ Save failed - click to retry":sv?"Saving...":"Connected"}</span></div>
-<div style={{display:"flex",gap:4}}><button className="act-btn" onClick={()=>setActOpen(true)} title="Recent edits across the team">📋 Activity</button><button className="rb" onClick={load}>↻ Sync</button><button className="rb" onClick={()=>setUser("")}>Switch Register</button><span style={{fontSize:9,color:"var(--t2)"}}>👤 {identity}</span></div></div>
+<div style={{display:"flex",gap:4}}><button className="act-btn" onClick={()=>setActOpen(true)} title="Recent edits across the team">📋 Activity</button><button className="rb" onClick={()=>setUser("")}>Switch Register</button><span style={{fontSize:9,color:"var(--t2)"}}>👤 {identity}</span></div></div>
 {/* ACTIVITY PANEL */}
 <div className={"act-overlay"+(actOpen?" open":"")} onClick={()=>setActOpen(false)}/>
 <div className={"act-panel"+(actOpen?" open":"")}>
