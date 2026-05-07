@@ -420,29 +420,30 @@ return<div className="notes-modal" onClick={onCancel}>
 </div></div></div>});
  
 const VORow=React.memo(function VORow({v,colW,uV,dVO,onOpenNote}){
-const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const styleC={color:rc};const bg="#fff";
+const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="#fff";
+const ro={color:rc,padding:"2px 4px",cursor:"default",userSelect:"text"};
 return<tr style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving... please wait before editing":editTip(v.eb,v.ea)}>
 <td style={{textAlign:"center",padding:0,width:24,position:"sticky",left:0,zIndex:2,background:bg}} title={"Created by "+(v.creator||"?")+(v.pushedAt?" · Pushed by "+(v.pushedBy||"?")+" on "+v.pushedAt:" (not pushed)")+(v.eb?" · Last edited by "+v.eb+(v.ea?" on "+v.ea:""):"")}><span style={{fontSize:9,color:"var(--t2)",fontWeight:700}}>{(v.pushedBy||v.creator||"?").substring(0,1).toUpperCase()}</span></td>
-<td style={{position:"sticky",left:colW[0],zIndex:2,background:bg}}><input list="vo-projects-list" value={v.pj} onChange={e=>uV(v.i,"pj",e.target.value)} style={{color:rc,width:"100%"}}/></td>
-<td style={{position:"sticky",left:colW[0]+colW[1],zIndex:2,background:bg}}><input value={v.area||""} onChange={e=>uV(v.i,"area",e.target.value)} style={{color:rc,width:"100%"}}/></td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2],zIndex:2,background:bg}}><select value={v.ty} onChange={e=>uV(v.i,"ty",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:9,width:"100%"}}><option>VO</option><option>DL</option></select></td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3],zIndex:2,background:bg}}><input value={v.vn} onChange={e=>uV(v.i,"vn",e.target.value)} style={{color:rc}}/></td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3]+colW[4],zIndex:2,background:bg}}><input value={v.srn} onChange={e=>uV(v.i,"srn",e.target.value)} style={{color:rc}} placeholder="—"/></td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3]+colW[4]+colW[5],zIndex:2,borderRight:"2px solid var(--bd)",background:bg}}><input value={v.vnm} onChange={e=>uV(v.i,"vnm",e.target.value.substring(0,100))} style={{color:rc}}/></td>
-<td><input value={v.ds} onChange={e=>uV(v.i,"ds",e.target.value)} onBlur={e=>uV(v.i,"ds",fmD(e.target.value))} placeholder="dd-mm-yy" style={{color:rc}}/></td>
-<td><input value={v.da} onChange={e=>uV(v.i,"da",e.target.value)} onBlur={e=>uV(v.i,"da",fmD(e.target.value))} placeholder="dd-mm-yy" style={{color:rc}}/></td>
-<td style={{textAlign:"right"}}><EC value={v.pr} onChange={val=>uV(v.i,"pr",val)} cls="cl" style={styleC} fmt={fmP}/></td>
-<td><input value={v.claim||""} onChange={e=>uV(v.i,"claim",e.target.value)} style={{color:rc,width:"100%"}} placeholder="—"/></td>
-<td><select value={v.st} onChange={e=>uV(v.i,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:9,fontWeight:600,width:"100%"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
-<td style={{textAlign:"right"}}><EC value={v.em} onChange={val=>uV(v.i,"em",val)} cls="cl" style={styleC} fmt={fmP}/></td>
-<td style={{textAlign:"right"}}><EC value={v.pf} onChange={val=>uV(v.i,"pf",val)} cls="cl" style={styleC} fmt={fmP}/></td>
+<td style={{position:"sticky",left:colW[0],zIndex:2,background:bg,...ro}}>{v.pj}</td>
+<td style={{position:"sticky",left:colW[0]+colW[1],zIndex:2,background:bg,...ro}}>{v.area||""}</td>
+<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2],zIndex:2,background:bg,...ro}}>{v.ty}</td>
+<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3],zIndex:2,background:bg,...ro}}>{v.vn}</td>
+<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3]+colW[4],zIndex:2,background:bg,...ro}}>{v.srn||""}</td>
+<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3]+colW[4]+colW[5],zIndex:2,borderRight:"2px solid var(--bd)",background:bg,...ro}}>{v.vnm}</td>
+<td style={ro}>{v.ds||""}</td>
+<td style={ro}>{v.da||""}</td>
+<td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pr?fmP(v.pr):""}</td>
+<td style={ro}>{v.claim||""}</td>
+<td><select value={v.st} onChange={e=>uV(v.i,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:9,fontWeight:600,width:"100%",cursor:"pointer"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
+<td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.em?fmP(v.em):""}</td>
+<td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pf?fmP(v.pf):""}</td>
 <td style={{textAlign:"right",color:rc,fontFamily:"var(--mn)"}}>{mg?fmP(mg):""}</td>
-<td style={{textAlign:"right",color:rc}}><EC value={v.nmn} onChange={val=>uV(v.i,"nmn",val)} cls="cl" style={styleC} fmt={fmN}/></td>
-<td style={{textAlign:"right",color:rc}}><EC value={v.nh} onChange={val=>uV(v.i,"nh",val)} cls="cl" style={styleC} fmt={fm2}/></td>
-<td style={{textAlign:"right",color:rc}}><EC value={v.nr} onChange={val=>uV(v.i,"nr",val)} cls="cl" style={styleC} fmt={fmP}/></td>
-<td style={{textAlign:"right",color:rc}}><EC value={v.oh} onChange={val=>uV(v.i,"oh",val)} cls="cl" style={styleC} fmt={fm2}/></td>
-<td style={{textAlign:"right",color:rc}}><EC value={v.or2} onChange={val=>uV(v.i,"or2",val)} cls="cl" style={styleC} fmt={fmP}/></td>
-<td style={{textAlign:"center"}} onClick={()=>onOpenNote(v.i)}>{v.notes?<span title={v.notes} style={{cursor:"pointer",fontSize:14}}>💬</span>:<span style={{cursor:"pointer",color:"var(--t2)",fontSize:12}}>+</span>}</td>
+<td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nmn?fmN(v.nmn):""}</td>
+<td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nh?fm2(v.nh):""}</td>
+<td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nr?fmP(v.nr):""}</td>
+<td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.oh?fm2(v.oh):""}</td>
+<td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.or2?fmP(v.or2):""}</td>
+<td style={{textAlign:"center",cursor:"default"}} title={v.notes||""}>{v.notes?<span style={{fontSize:14}}>💬</span>:<span style={{color:"var(--t2)",fontSize:12}}>—</span>}</td>
 </tr>});
  
 const CoordRow=React.memo(function CoordRow({v,vi,coordColW,onOpenNote}){
@@ -508,7 +509,7 @@ const handleSumHover=(e,enter)=>{
 };
  
 const[pjO,sPjO]=useState(false);const[acO,sAcO]=useState(false);
-const defCW=[24,130,130,60,70,60,140,90,90,85,70,170,80,80,80,60,60,60,60,60,50];
+const defCW=[24,130,130,60,70,130,140,90,90,85,70,170,80,80,80,60,60,60,60,60,50];
 const[colW,setColW]=useState(defCW);
 const defSettingsW=[24,170,80,110,130,110,140,130,200,100,110,110,150,110,50];
 const[settingsW,setSettingsW]=useState(defSettingsW);
@@ -605,8 +606,8 @@ const loadCoordVO=async(user)=>{setCoordUser(user);sLd(true);try{const r=await f
 const dVO=useCallback(async(v)=>{alert("Master users cannot delete VOs.\n\nPlease ask the coordinator who owns this VO ("+(v.creator||"unknown")+") to delete it from their register.");return},[]);
 const calcDLPrice=(v,fd,val)=>{const u={...v,[fd]:val};const m=N(u.nmn)||1;return(m*N(u.nh)*N(u.nr))+(m*N(u.oh)*N(u.or2))};
 const uV=useCallback(async(vi,fd,val)=>{const v=voRef.current[vi];if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
-// Master register: status-only edits permitted (other fields read-only on this page)
-if(fd!=="st"){alert("Only the Status field is editable in the Master Register.\n\nFor other edits, the coordinator who owns this VO must edit it in their register.");return}
+// Master register: only Status can land here (other cells are read-only display spans)
+if(fd!=="st")return;
 // Status revert warning: changing FROM Fully/Partially Claimed
 const oldStL=String(v.st||"").toLowerCase();
 if((oldStL.includes("fully claimed")||oldStL.includes("partially claimed"))&&val!==v.st){
