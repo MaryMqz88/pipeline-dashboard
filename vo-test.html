@@ -111,7 +111,8 @@ const USERS=["Luka","Lizzie","Lachlan"];
 function fmP(v){if(!v&&v!==0)return"";return"$"+Number(v).toLocaleString("en-AU",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmN(v){if(!v&&v!==0)return"";return Math.round(Number(v)).toLocaleString("en-AU")}
 function fm2(v){if(!v&&v!==0)return"";return Number(v).toLocaleString("en-AU",{minimumFractionDigits:2,maximumFractionDigits:2})}
-const editTip=(by,at)=>{if(!by&&!at)return"";if(by&&at)return"Last edited by "+by+" on "+at;if(by)return"Last edited by "+by;return"Last edited "+at};
+const fmEdAt=v=>{if(!v)return"";try{const d=new Date(v);if(isNaN(d.getTime()))return String(v);const day=d.getDate(),mo=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()],yr=String(d.getFullYear()).slice(-2),hh=String(d.getHours()).padStart(2,"0"),mm=String(d.getMinutes()).padStart(2,"0");return day+"-"+mo+"-"+yr+" "+hh+":"+mm}catch{return String(v)}};
+const editTip=(by,at)=>{if(!by&&!at)return"";const niceAt=fmEdAt(at);if(by&&niceAt)return"Last edited by "+by+" · "+niceAt;if(by)return"Last edited by "+by;return"Last edited "+niceAt};
 const cleanActivity=(arr)=>{if(!arr)return[];const r=[];for(const a of arr){if(a.sheet!=="Monthly"){r.push(a);continue}const t=String(a.target||"");const idx=t.indexOf(" / ");const proj=idx>=0?t.slice(0,idx):t;const month=idx>=0?t.slice(idx+3):"";if(["_LS","_LE","_LP","_LO"].includes(proj))continue;if(proj==="_LK"){r.push({...a,sheet:"Pipeline",target:"Locked "+month});continue}if(month==="_BC"){r.push({...a,target:proj+" — Construction Budget"});continue}if(month==="_BV"){r.push({...a,target:proj+" — Variations Budget"});continue}r.push(a)}return r};
 function fmD(v){if(!v)return"";var s=String(v).trim();var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 if(s.includes("T")||/^\d{4}-\d{2}-\d{2}/.test(s)){var d=new Date(s);if(!isNaN(d)){return String(d.getDate()).padStart(2,"0")+"-"+ms[d.getMonth()]+"-"+String(d.getFullYear()).slice(2)}}
@@ -153,6 +154,9 @@ const[vo,sVo]=useState([]);
 const[pj,sPj]=useState([]);
 const[ld,sLd]=useState(true);
 const[sv,sSv]=useState(false);
+const svRef=useRef(false);useEffect(()=>{svRef.current=sv},[sv]);
+const editingRef=useRef(0);
+const markEdit=()=>{editingRef.current=Date.now()};
 const[er,sEr]=useState(null);
 const[sa,sSa]=useState(false);
 const[adding,setAdding]=useState(false);
@@ -216,7 +220,13 @@ useEffect(()=>{if(!identity||!pp)return;const ping=()=>{fetch(API+"?action=heart
 useEffect(()=>{if(!user||!pp)return;
   if(SUPABASE_ANON_KEY==="PASTE_ANON_KEY_HERE"){console.warn("Realtime disabled: SUPABASE_ANON_KEY not set");return}
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-  let dt=null;const triggerReload=()=>{if(dt)clearTimeout(dt);dt=setTimeout(()=>load(true),500)};
+  let dt=null;
+  const triggerReload=()=>{
+    if(dt)clearTimeout(dt);
+    const sinceEdit=Date.now()-editingRef.current;
+    if(svRef.current||sinceEdit<1500){dt=setTimeout(triggerReload,800);return}
+    dt=setTimeout(()=>load(true),300);
+  };
   const ch=sb.channel("vo-changes")
     .on("postgres_changes",{event:"*",schema:"public",table:"variations"},triggerReload)
     .on("postgres_changes",{event:"*",schema:"public",table:"projects"},triggerReload)
@@ -230,7 +240,7 @@ useEffect(()=>{if(!actOpen)return;let cancelled=false;const refresh=async()=>{tr
 const tAgo=(ts)=>{if(!ts)return"";const d=Date.now()-new Date(ts).getTime();if(d<60000)return"just now";if(d<3600000)return Math.floor(d/60000)+" min ago";if(d<86400000)return Math.floor(d/3600000)+"h ago";return Math.floor(d/86400000)+"d ago"};
 
 const calcDLPrice=(v,fd,val)=>{const u={...v,[fd]:val};const m=N(u.nmn)||1;return(m*N(u.nh)*N(u.nr))+(m*N(u.oh)*N(u.or2))};
-const uV=useCallback(async(vi,fd,val)=>{const v=vo[vi];if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
+const uV=useCallback(async(vi,fd,val)=>{markEdit();const v=vo[vi];if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
 // Status revert warning: changing FROM Fully/Partially Claimed
 if(fd==="st"){const oldStL=String(v.st||"").toLowerCase();if((oldStL.includes("fully claimed")||oldStL.includes("partially claimed"))&&val!==v.st){if(!confirm("⚠️ Please double check.\n\nThis VO is currently marked \""+v.st+"\". Are you sure you want to change it to \""+val+"\"?\n\nReverting a claimed status can affect the audit trail."))return}}
 const autoP=v.ty==="DL"&&["nmn","nh","nr","oh","or2"].includes(fd);const newPr=autoP?calcDLPrice(v,fd,val):null;sVo(pr=>pr.map((x,i)=>i===vi?{...x,[fd]:val,...(autoP?{pr:newPr}:{}),ea:new Date().toISOString()}:x));
@@ -345,7 +355,7 @@ voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="
 <td style={{textAlign:"right"}}><EC value={v.oh} onChange={val=>uV(v.i,"oh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
 <td style={{textAlign:"right"}}><EC value={v.or2} onChange={val=>uV(v.i,"or2",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
 <td style={{textAlign:"center"}} onClick={()=>{setNoteEdit(v.i);setNoteText(v.notes||"")}}>{v.notes?<span title={v.notes} style={{cursor:"pointer",fontSize:14}}>💬</span>:<span style={{cursor:"pointer",color:"var(--t2)",fontSize:12}}>+</span>}</td>
-<td style={{textAlign:"center"}}>{(()=>{const needsPush=(()=>{if(!v.pushedAt)return true;if(!v.ea)return false;try{const ea=new Date(v.ea).getTime(),pa=new Date(v.pushedAt).getTime();if(isNaN(ea)||isNaN(pa))return false;return ea>pa}catch{return false}})();return needsPush?<button className="push-btn" onClick={()=>pushVO(v)} style={{background:"var(--gn)"}} title={v.pushedAt?"Has unpushed changes — last pushed by "+(v.pushedBy||"?")+" on "+fmD(v.pushedAt):"Draft — not yet pushed"}>Push</button>:<span style={{fontSize:9,color:"var(--t2)",cursor:"help"}} title={"Pushed by "+(v.pushedBy||"?")+" on "+v.pushedAt}>Pushed {fmD(v.pushedAt)}</span>})()}</td>
+<td style={{textAlign:"center"}}>{!v.pushedAt?<button className="push-btn" onClick={()=>pushVO(v)} style={{background:"var(--gn)"}} title="Draft — not yet pushed">Push</button>:<span style={{fontSize:9,color:"var(--t2)",cursor:"help"}} title={"Pushed by "+(v.pushedBy||"?")+" on "+v.pushedAt+" — edits now flow live"}>Pushed {fmD(v.pushedAt)}</span>}</td>
 </tr>})}
 </tbody></table></div></div>
 
