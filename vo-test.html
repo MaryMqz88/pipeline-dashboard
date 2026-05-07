@@ -214,7 +214,7 @@ useEffect(()=>{if(user)load()},[user,load]);
 useEffect(()=>{if(!identity||!pp)return;const ping=()=>{fetch(API+"?action=heartbeat&user="+encodeURIComponent(identity)+"&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).catch(()=>{})};ping();const id=setInterval(ping,60000);return()=>clearInterval(id)},[identity,pp]);
 // Realtime: subscribe to DB changes via websocket and silently refresh on any change.
 useEffect(()=>{if(!user||!pp)return;
-  if(SUPABASE_ANON_KEY==="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxY2VtbXVudHpkZGtkd3pxZW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTg1NjIsImV4cCI6MjA5MzY5NDU2Mn0.NwyQC3dmI6LQTLEHzDLaQLv274LcjKag1Zzgssf11aQ"){console.warn("Realtime disabled: SUPABASE_ANON_KEY not set");return}
+  if(SUPABASE_ANON_KEY==="PASTE_ANON_KEY_HERE"){console.warn("Realtime disabled: SUPABASE_ANON_KEY not set");return}
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   let dt=null;const triggerReload=()=>{if(dt)clearTimeout(dt);dt=setTimeout(()=>load(true),500)};
   const ch=sb.channel("vo-changes")
