@@ -151,7 +151,7 @@ const voRowColor=st=>{const s=String(st||"").toLowerCase();if(s.includes("fully 
 
 function EC({value,onChange,cls,style,fmt}){const[e,sE]=useState(false);const[d,sD]=useState("");const r=useRef();
 if(e)return<input ref={r} autoFocus type="text" value={d} onChange={ev=>{sD(ev.target.value)}} onBlur={()=>{const v=parseFloat(d.replace(/[$,]/g,""))||0;onChange(v);sE(false)}} onKeyDown={ev=>{if(ev.key==="Enter"){const v=parseFloat(d.replace(/[$,]/g,""))||0;onChange(v);sE(false)}if(ev.key==="Escape")sE(false)}} style={{width:"100%",textAlign:"right",...(style||{})}}/>;
-return<div className={cls||"cl"} style={{textAlign:"right",fontFamily:"var(--mn)",cursor:"pointer",padding:"2px 4px",...(style||{})}} onDoubleClick={()=>{sD(value?String(value):"");sE(true)}}>{value?(fmt?fmt(value):String(value)):""}</div>}
+return<div className={cls||"cl"} style={{textAlign:"right",fontFamily:"var(--mn)",cursor:"pointer",padding:"2px 4px",...(style||{})}} onClick={()=>{sD(value?String(value):"");sE(true)}}>{value?(fmt?fmt(value):String(value)):""}</div>}
 
 function DebInput({value,onSave,style,list,placeholder,format,maxLen}){const[v,sV]=useState(value||"");const[focused,setFocused]=useState(false);const lastSavedRef=useRef(value||"");
 useEffect(()=>{if(focused)return;const cur=value==null?"":String(value);if(cur!==lastSavedRef.current){sV(cur);lastSavedRef.current=cur}},[value,focused]);
@@ -404,7 +404,10 @@ return<div className="app">
 
 {/* Add form (visible on home with project picker, or in project view with project pre-selected) */}
 {(voView==="project"||voView==="home")&&sa&&<div style={{padding:8,background:"var(--s2)",borderRadius:4,marginBottom:6,display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
-<select value={nvo.project} disabled={voView==="project"} onChange={e=>sNvo({...nvo,project:e.target.value})} style={{padding:"3px 6px",fontSize:10,opacity:voView==="project"?0.7:1,cursor:voView==="project"?"not-allowed":"pointer"}}><option value="">Project...</option>{pj.filter(p=>isRealProject(p.nm)).map(p=><option key={p.nm} value={p.nm}>{p.nm}</option>)}</select>
+{voView==="project"
+  ?<span style={{padding:"3px 8px",fontSize:10,background:"var(--s2)",border:"1px dashed var(--bd)",borderRadius:4,color:"var(--t2)",fontWeight:600,cursor:"not-allowed"}} title="Project locked — already selected from card view">{selectedProject}</span>
+  :<select value={nvo.project} onChange={e=>sNvo({...nvo,project:e.target.value})} style={{padding:"3px 6px",fontSize:10}}><option value="">Project...</option>{pj.filter(p=>isRealProject(p.nm)).map(p=><option key={p.nm} value={p.nm}>{p.nm}</option>)}</select>
+}
 <select value={nvo.type} onChange={e=>sNvo({...nvo,type:e.target.value})} style={{padding:"3px 6px",fontSize:10}}><option>VO</option><option>DL</option></select>
 <input placeholder="Var No." value={nvo.varNo} onChange={e=>sNvo({...nvo,varNo:e.target.value})} style={{width:60,padding:"3px 6px",fontSize:10}}/>
 <input placeholder="Name" value={nvo.varName} onChange={e=>sNvo({...nvo,varName:e.target.value})} style={{width:140,padding:"3px 6px",fontSize:10}}/>
