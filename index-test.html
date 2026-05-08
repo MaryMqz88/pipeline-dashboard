@@ -333,6 +333,20 @@ input[type=number]{-moz-appearance:textfield}
 .vo-card{background:#fff;border:1px solid var(--bd);border-radius:6px;padding:6px 12px;flex:1;min-width:100px}
 .vo-card .lb{font-size:8px;color:var(--t2);text-transform:uppercase;font-weight:700;letter-spacing:.3px}
 .vo-card .vl{font-size:16px;font-weight:800;margin-top:2px}
+/* Project cards grid (home view) */
+.pj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:10px;overflow-y:auto;flex:1;min-height:0;align-content:start}
+.pj-card{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:12px 14px;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;display:flex;flex-direction:column;gap:8px}
+.pj-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:var(--ac)}
+.pj-card .pjnm{font-weight:700;font-size:13px;color:var(--tx);line-height:1.3}
+.pj-card .pjmeta{font-size:9px;color:var(--t2);font-family:var(--mn)}
+.pj-card .pjcaps{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.pj-card .pjcap{padding:2px 8px;border-radius:10px;border:1px solid;font-size:9px;font-weight:600;cursor:pointer;font-family:var(--ft);background:transparent;transition:background .1s}
+.pj-card .pjcap:hover{filter:brightness(.95)}
+.pj-card .pjcap.zero{opacity:.35}
+.back-btn{padding:4px 10px;border:1px solid var(--bd);border-radius:4px;background:#fff;cursor:pointer;font-size:11px;color:var(--ac);font-family:var(--ft);font-weight:600}
+.back-btn:hover{background:var(--s2)}
+.detail-title{font-size:12px;color:var(--t2);font-weight:600;margin-left:8px}
+.detail-title b{color:var(--tx);font-weight:700}
  
 .vt th:nth-child(-n+6){z-index:5;background:var(--s2)}
 .vt td:nth-child(-n+6){background:#fff}
@@ -560,8 +574,56 @@ const[voFiltTy,setVoFiltTy]=useState("all");
 const[voFiltSt,setVoFiltSt]=useState([]);
 const voFiltTy_d=useDeferredValue(voFiltTy);
 const voFiltSt_d=useDeferredValue(voFiltSt);
-const voFilt=useMemo(()=>{let f=vo;if(voFiltPj_d)f=f.filter(v=>v.pj.toLowerCase().includes(voFiltPj_d.toLowerCase()));if(voFiltTy_d!=="all")f=f.filter(v=>v.ty===voFiltTy_d);if(voFiltSt_d.length>0)f=f.filter(v=>voFiltSt_d.some(s=>v.st.toLowerCase().includes(s.toLowerCase())));return f.slice().sort((a,b)=>{const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad})},[vo,voFiltPj_d,voFiltTy_d,voFiltSt_d]);
-const coordFilt=useMemo(()=>{let f=coordVO;if(voFiltPj_d)f=f.filter(v=>v.pj.toLowerCase().includes(voFiltPj_d.toLowerCase()));if(voFiltTy_d!=="all")f=f.filter(v=>v.ty===voFiltTy_d);if(voFiltSt_d.length>0)f=f.filter(v=>voFiltSt_d.some(s=>v.st.toLowerCase().includes(s.toLowerCase())));return f.slice().sort((a,b)=>{const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad})},[coordVO,voFiltPj_d,voFiltTy_d,voFiltSt_d]);
+// Drill-in navigation state (shared between master VO Register and master coord views — only one is shown at a time)
+const[voView,setVoView]=useState("home");
+const[selectedVoProject,setSelectedVoProject]=useState(null);
+const[selectedVoStatus,setSelectedVoStatus]=useState(null);
+const goVoHome=()=>{setVoView("home");setSelectedVoProject(null);setSelectedVoStatus(null);setVoFiltSt([]);setVoFiltTy("all")};
+
+const voFilt=useMemo(()=>{
+  let f=vo;
+  if(voView==="project"&&selectedVoProject)f=f.filter(v=>v.pj===selectedVoProject);
+  else if(voView==="status"&&selectedVoStatus){
+    const key=selectedVoStatus.toLowerCase().split(" - ")[0].split(" ")[0];
+    f=f.filter(v=>v.st&&v.st.toLowerCase().includes(key));
+  }
+  if(voFiltPj_d&&voView!=="project")f=f.filter(v=>v.pj.toLowerCase().includes(voFiltPj_d.toLowerCase()));
+  if(voFiltTy_d!=="all")f=f.filter(v=>v.ty===voFiltTy_d);
+  if(voFiltSt_d.length>0)f=f.filter(v=>voFiltSt_d.some(s=>v.st.toLowerCase().includes(s.toLowerCase())));
+  return f.slice().sort((a,b)=>{const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad})
+},[vo,voView,selectedVoProject,selectedVoStatus,voFiltPj_d,voFiltTy_d,voFiltSt_d]);
+
+const coordFilt=useMemo(()=>{
+  let f=coordVO;
+  if(voView==="project"&&selectedVoProject)f=f.filter(v=>v.pj===selectedVoProject);
+  else if(voView==="status"&&selectedVoStatus){
+    const key=selectedVoStatus.toLowerCase().split(" - ")[0].split(" ")[0];
+    f=f.filter(v=>v.st&&v.st.toLowerCase().includes(key));
+  }
+  if(voFiltPj_d&&voView!=="project")f=f.filter(v=>v.pj.toLowerCase().includes(voFiltPj_d.toLowerCase()));
+  if(voFiltTy_d!=="all")f=f.filter(v=>v.ty===voFiltTy_d);
+  if(voFiltSt_d.length>0)f=f.filter(v=>voFiltSt_d.some(s=>v.st.toLowerCase().includes(s.toLowerCase())));
+  return f.slice().sort((a,b)=>{const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad})
+},[coordVO,voView,selectedVoProject,selectedVoStatus,voFiltPj_d,voFiltTy_d,voFiltSt_d]);
+
+// Project cards data: grouped by project, alphabetical, with per-status counts.
+// One memo per data source (master VO data vs coord VO data).
+const buildCards=(rows,projects)=>{
+  const grouped=new Map();
+  if(projects)projects.forEach(p=>{if(p.nm&&!p.nm.startsWith("_"))grouped.set(p.nm,{name:p.nm,vos:0,total:0,statusCounts:{}})});
+  rows.forEach(v=>{
+    if(!v.pj)return;
+    if(!grouped.has(v.pj))grouped.set(v.pj,{name:v.pj,vos:0,total:0,statusCounts:{}});
+    const g=grouped.get(v.pj);
+    g.vos++;g.total+=Number(v.pr)||0;
+    VO_ST.forEach(s=>{const key=s.v.toLowerCase().split(" - ")[0].split(" ")[0];if(v.st&&v.st.toLowerCase().includes(key))g.statusCounts[s.v]=(g.statusCounts[s.v]||0)+1});
+  });
+  return Array.from(grouped.values()).sort((a,b)=>a.name.localeCompare(b.name));
+};
+const masterProjectCards=useMemo(()=>buildCards(vo,pj),[vo,pj]);
+const coordProjectCards=useMemo(()=>buildCards(coordVO,pj),[coordVO,pj]);
+const masterFilteredCards=useMemo(()=>{if(!voFiltPj_d)return masterProjectCards;const q=voFiltPj_d.toLowerCase();return masterProjectCards.filter(c=>c.name.toLowerCase().includes(q))},[masterProjectCards,voFiltPj_d]);
+const coordFilteredCards=useMemo(()=>{if(!voFiltPj_d)return coordProjectCards;const q=voFiltPj_d.toLowerCase();return coordProjectCards.filter(c=>c.name.toLowerCase().includes(q))},[coordProjectCards,voFiltPj_d]);
 const[nvo,sNvo]=useState({project:"",type:"VO",varNo:"",varName:"",ds:"",da:"",price:0,status:"",em:0,pf:0});
 const sub=n=>{localStorage.setItem(UK,n);sU(n)};
 const togM=m=>sSM(p=>p.includes(m)?p.filter(x=>x!==m):[...p,m]);
@@ -593,18 +655,30 @@ const load=useCallback(async(silent)=>{
   sLd(false)},[]);
  
 useEffect(()=>{if(un)load()},[un,load]);
+const vwRef=useRef("grid");useEffect(()=>{vwRef.current=vw},[vw]);
+const coordUserRef=useRef("");useEffect(()=>{coordUserRef.current=coordUser},[coordUser]);
 const[actOpen,setActOpen]=useState(false);
 const[actData,setActData]=useState({presence:[],activity:[]});
 // Heartbeat: ping every 60s while logged in (lock-free on server)
 useEffect(()=>{if(!un||!pp)return;const ping=()=>{fetch(API+"?action=heartbeat&user="+encodeURIComponent(un)+"&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).catch(()=>{})};ping();const id=setInterval(ping,60000);return()=>clearInterval(id)},[un,pp]);
 // Realtime: subscribe to DB changes via websocket and silently refresh on any change.
 // Replaces polling — only fires when something actually changes.
-// Each editable component protects its own focused state, so realtime reloads are safe to fire freely.
+// Reload waits for any in-flight saves to complete (chained on wqRef) so we never fetch stale data.
 useEffect(()=>{if(!un||!pp)return;
   if(SUPABASE_ANON_KEY==="PASTE_ANON_KEY_HERE"){console.warn("Realtime disabled: SUPABASE_ANON_KEY not set");return}
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   let dt=null;
-  const triggerReload=()=>{if(dt)clearTimeout(dt);dt=setTimeout(()=>load(true),300)};
+  const triggerReload=()=>{
+    if(dt)clearTimeout(dt);
+    dt=setTimeout(()=>{
+      // Chain after any pending saves. If queue is empty, this resolves instantly.
+      wqRef.current.then(()=>{
+        load(true);
+        // If currently viewing a coord register, also re-fetch coord data
+        if(vwRef.current==="coord"&&coordUserRef.current)loadCoordVO(coordUserRef.current);
+      });
+    },300);
+  };
   const ch=sb.channel("app-changes")
     .on("postgres_changes",{event:"*",schema:"public",table:"variations"},triggerReload)
     .on("postgres_changes",{event:"*",schema:"public",table:"projects"},triggerReload)
@@ -701,8 +775,8 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
 <div className="sb-divider"/>
 <div className={"sb-item"+(vw==="grid"?" active":"")} onClick={()=>{sVw("grid");sSbO(false)}}><span className="sb-ico">📊</span>PMC & PF Pipeline</div>
 <div className={"sb-item"+(vw==="pfab"?" active":"")} onClick={()=>{sVw("pfab");sSbO(false)}}><span className="sb-ico">🏭</span>PFAB Pipeline</div>
-<div className={"sb-item"+(vw==="vos"?" active":"")} onClick={()=>{sVw("vos");sSbO(false)}}><span className="sb-ico">📋</span>Variation Register</div>
-{COORDS.map(u=><div key={u} className={"sb-item"+(vw==="coord"&&coordUser===u?" active":"")} onClick={()=>{sVw("coord");loadCoordVO(u);sSbO(false)}} style={{paddingLeft:36,fontSize:11}}><span className="sb-ico">👤</span>{u}</div>)}
+<div className={"sb-item"+(vw==="vos"?" active":"")} onClick={()=>{sVw("vos");goVoHome();sSbO(false)}}><span className="sb-ico">📋</span>Variation Register</div>
+{COORDS.map(u=><div key={u} className={"sb-item"+(vw==="coord"&&coordUser===u?" active":"")} onClick={()=>{sVw("coord");goVoHome();loadCoordVO(u);sSbO(false)}} style={{paddingLeft:36,fontSize:11}}><span className="sb-ico">👤</span>{u}</div>)}
 <div className={"sb-item"+(vw==="settings"?" active":"")} onClick={()=>{sVw("settings");sSbO(false)}}><span className="sb-ico">⚙️</span>Project Settings</div>
 <div className="sb-item" style={{opacity:.4,cursor:"default"}}><span className="sb-ico">👷</span>Day Labour Dockets<span className="sb-badge">Soon</span></div>
 </div>
@@ -889,18 +963,27 @@ return<div className="pr pr-pf" key={p.i}>
 <div className="vo-cards"><div className="vo-card"><div className="lb">Total VOs</div><div className="vl" style={{color:"var(--ac)"}}>{voFilt.length}</div></div><div className="vo-card"><div className="lb">Total Price</div><div className="vl" style={{color:"var(--ac)"}}>{fK(voFilt.reduce((t,v)=>t+v.pr,0))}</div></div><div className="vo-card"><div className="lb">Ext. Materials</div><div className="vl" style={{color:"var(--rd)"}}>{fK(voFilt.reduce((t,v)=>t+v.em,0))}</div></div><div className="vo-card"><div className="lb">PFAB Materials</div><div className="vl" style={{color:"var(--rd)"}}>{fK(voFilt.reduce((t,v)=>t+v.pf,0))}</div></div><div className="vo-card"><div className="lb">Margin</div><div className="vl" style={{color:"var(--gn)"}}>{fK(voFilt.reduce((t,v)=>t+(v.pr-v.em-v.pf),0))}</div></div></div>
 <div className="vhd" style={{justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
 <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-<span style={{fontSize:10,color:"var(--t2)",fontStyle:"italic"}}>Read-only — only <b style={{fontStyle:"normal"}}>Status</b> is editable. New VOs are created by coordinators in their own registers and pushed here.</span>
+{voView!=="home"&&<button className="back-btn" onClick={goVoHome}>← Back</button>}
+{voView==="project"&&<span className="detail-title">Variations in <b>{selectedVoProject}</b></span>}
+{voView==="status"&&<span className="detail-title">All VOs marked <b>{selectedVoStatus}</b></span>}
+{voView==="home"&&<span style={{fontSize:10,color:"var(--t2)",fontStyle:"italic"}}>Read-only — only <b style={{fontStyle:"normal"}}>Status</b> is editable. Click a project to drill in.</span>}
 </div>
 <div style={{display:"flex",gap:4,alignItems:"center"}}>
 <span style={{fontSize:10,color:"var(--t2)"}}>{vo.length} · Approved: {fK(Object.values(voP).reduce((s,v)=>s+v,0))}</span>
 </div></div>
 <div style={{padding:"6px 10px",display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",borderBottom:"1px solid var(--bd)"}}>
-<input value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder="Search project..." style={{padding:"3px 8px",border:"1px solid var(--bd)",borderRadius:4,fontSize:10,outline:"none",width:160,fontFamily:"var(--ft)",background:"var(--bg)",color:"var(--tx)"}}/>
+{voView!=="project"&&<input value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder={voView==="home"?"Search project...":"Search..."} style={{padding:"3px 8px",border:"1px solid var(--bd)",borderRadius:4,fontSize:10,outline:"none",width:160,fontFamily:"var(--ft)",background:"var(--bg)",color:"var(--tx)"}}/>}
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setVoFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:voFiltTy===t?"var(--ac)":"var(--bd)",background:voFiltTy===t?"var(--ac)":"transparent",color:voFiltTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
-<div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=masterStCnt[s.v]||0;return<button key={s.v} onClick={()=>setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:voFiltSt.includes(s.v)?s.c:"var(--bd)",background:voFiltSt.includes(s.v)?s.c:"transparent",color:voFiltSt.includes(s.v)?"#fff":s.c,fontSize:8,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
-<span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voFilt.length} of {vo.length}</span>
+<div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=masterStCnt[s.v]||0;const isActive=voView==="status"?selectedVoStatus===s.v:voFiltSt.includes(s.v);return<button key={s.v} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedVoStatus(s.v)}else{setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
+<span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(masterFilteredCards.length+" projects · "+vo.length+" VOs"):(voFilt.length+" of "+vo.length)}</span>
 </div>
-{voFilt.length===0?<div className="em">No entries match filter.</div>:
+{voView==="home"?<div className="pj-grid">
+{masterFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{vo.length===0?"No variations yet.":"No projects match your search."}</div>:masterFilteredCards.map(c=><div key={c.name} className="pj-card" onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all")}}>
+<div className="pjnm">{c.name}</div>
+<div className="pjmeta">{c.vos} VO{c.vos!==1?"s":""} · {fK(c.total)}</div>
+<div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all")}}>{s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
+</div>)}
+</div>:voFilt.length===0?<div className="em">No entries match filter.</div>:
 <div className="vsc-fx"><table className="vt" style={{width:colW.reduce((a,b)=>a+b,0)+"px",minWidth:colW.reduce((a,b)=>a+b,0)+"px"}}><colgroup>{colW.map((w,i)=><col key={i} style={{width:w+"px"}}/>)}</colgroup><thead><tr>
 {["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes"].map((h,ci)=><th key={h} className={ci===0?"":ci<11?"tg":ci<14?"ty":ci<19?"tp":"tg"} style={{width:colW[ci],minWidth:40,...(ci<7?{position:"sticky",left:colW.slice(0,ci).reduce((a,b)=>a+b,0),zIndex:5,background:ci<11?"#eef9f3":ci<14?"#fdf3e9":ci<19?"#f3eefb":"#eef9f3"}:{}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}<div className="col-resize" onMouseDown={e=>startResize(ci,e)}/></th>)}
 </tr></thead><tbody>{voFilt.map(v=><VORow key={v.i} v={v} colW={colW} uV={uV} dVO={dVO} onOpenNote={setNoteEdit}/>)}</tbody></table></div>}
@@ -962,17 +1045,26 @@ return<div className="pr pr-pf" key={p.i}>
 <div className="vo-card"><div className="lb">Margin</div><div className="vl" style={{color:"var(--gn)"}}>${coordFilt.reduce((t,v)=>t+(v.pr-v.em-v.pf),0).toLocaleString("en-AU",{maximumFractionDigits:0})}</div></div>
 </div>
 <div className="br" style={{padding:"6px 10px",margin:0,borderBottom:"1px solid var(--bd)"}}>
+{voView!=="home"&&<button className="back-btn" onClick={goVoHome}>← Back</button>}
+{voView==="project"&&<span className="detail-title">Variations in <b>{selectedVoProject}</b></span>}
+{voView==="status"&&<span className="detail-title">All VOs marked <b>{selectedVoStatus}</b></span>}
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setVoFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:voFiltTy===t?"var(--ac)":"var(--bd)",background:voFiltTy===t?"var(--ac)":"transparent",color:voFiltTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
-<div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=coordStCnt[s.v]||0;return<button key={s.v} onClick={()=>setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:voFiltSt.includes(s.v)?s.c:"var(--bd)",background:voFiltSt.includes(s.v)?s.c:"transparent",color:voFiltSt.includes(s.v)?"#fff":s.c,fontSize:8,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
-<input className="sx" value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder="Search project..."/>
-<span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{coordFilt.length} of {coordVO.length} · Read only · Approved: {coordVO.filter(v=>{const u=String(v.st).toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")}).length}</span>
+<div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=coordStCnt[s.v]||0;const isActive=voView==="status"?selectedVoStatus===s.v:voFiltSt.includes(s.v);return<button key={s.v} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedVoStatus(s.v)}else{setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
+{voView!=="project"&&<input className="sx" value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder={voView==="home"?"Search project...":"Search..."}/>}
+<span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(coordFilteredCards.length+" projects · "+coordVO.length+" VOs · Read only"):(coordFilt.length+" of "+coordVO.length+" · Read only · Approved: "+coordVO.filter(v=>{const u=String(v.st).toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")}).length)}</span>
 </div>
-<div className="vsc-fx"><table className="vt" style={{width:coordColW.reduce((a,b)=>a+b,0)+"px",minWidth:coordColW.reduce((a,b)=>a+b,0)+"px"}}><colgroup>{coordColW.map((w,i)=><col key={i} style={{width:w+"px"}}/>)}</colgroup><thead><tr>
+{voView==="home"?<div className="pj-grid">
+{coordFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{coordVO.length===0?(coordUser+" has no variations yet."):"No projects match your search."}</div>:coordFilteredCards.map(c=><div key={c.name} className="pj-card" onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all")}}>
+<div className="pjnm">{c.name}</div>
+<div className="pjmeta">{c.vos} VO{c.vos!==1?"s":""} · {fK(c.total)}</div>
+<div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all")}}>{s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
+</div>)}
+</div>:<div className="vsc-fx"><table className="vt" style={{width:coordColW.reduce((a,b)=>a+b,0)+"px",minWidth:coordColW.reduce((a,b)=>a+b,0)+"px"}}><colgroup>{coordColW.map((w,i)=><col key={i} style={{width:w+"px"}}/>)}</colgroup><thead><tr>
 {["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"].map((h,ci)=><th key={h+"_"+ci} className={ci===0?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} style={{width:coordColW[ci],minWidth:30,...(ci<7?{position:"sticky",left:coordColW.slice(0,ci).reduce((a,b)=>a+b,0),top:0,zIndex:5,background:ci===0?"#fff":"#eef9f3"}:{top:0,position:"sticky",zIndex:3,background:ci<12?"#eef9f3":ci<15?"#fdf3e9":ci<20?"#f3eefb":"#eef9f3"}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}{ci>0&&<div className="col-resize" onMouseDown={e=>startCoordResize(ci,e)}/>}</th>)}
 </tr></thead><tbody>
 {coordFilt.length===0?<tr><td colSpan={22} style={{textAlign:"center",padding:20,color:"var(--t2)"}}>No entries match filter.</td></tr>:
 coordFilt.map((v,vi)=><CoordRow key={vi} v={v} vi={vi} coordColW={coordColW} onOpenNote={setCoordNoteView}/>)}
-</tbody></table></div>
+</tbody></table></div>}
 </div>}
  
 {noteEdit!==null&&<NoteEditModal initial={vo[noteEdit]?.notes||""} title={vo[noteEdit]?.vnm||vo[noteEdit]?.pj||"Entry"} onSave={t=>{uV(noteEdit,"notes",t);setNoteEdit(null)}} onCancel={()=>setNoteEdit(null)}/>}
