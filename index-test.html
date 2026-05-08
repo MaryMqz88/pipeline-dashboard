@@ -335,9 +335,10 @@ input[type=number]{-moz-appearance:textfield}
 .vo-card .vl{font-size:16px;font-weight:800;margin-top:2px}
 /* Project cards grid (home view) */
 .pj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:10px;overflow-y:auto;flex:1;min-height:0;align-content:start}
-.pj-card{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:12px 14px;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;display:flex;flex-direction:column;gap:8px}
+.pj-card{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:12px 14px;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
+.pj-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-accent,var(--bd))}
 .pj-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:var(--ac)}
-.pj-card .pjnm{font-weight:700;font-size:13px;color:var(--tx);line-height:1.3}
+.pj-card .pjnm{font-weight:700;font-size:13px;color:#3a4252;line-height:1.3}
 .pj-card .pjmeta{font-size:9px;color:var(--t2);font-family:var(--mn)}
 .pj-card .pjcaps{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
 .pj-card .pjcap{padding:2px 8px;border-radius:10px;border:1px solid;font-size:9px;font-weight:600;cursor:pointer;font-family:var(--ft);background:transparent;transition:background .1s}
@@ -387,6 +388,8 @@ const matchStatus=(voSt,pillV)=>{
 // Pipeline catch-all categories that aren't real jobs — exclude from VO Register cards/lists
 const SKIP_PJ=/^(extra\s*sales|day\s*lab[ou]r)$/i;
 const isRealProject=nm=>nm&&!nm.startsWith("_")&&!SKIP_PJ.test(nm);
+// Top-stripe color for project cards by status
+const stripeColor=st=>st==="Pending"?"#d9534f":st==="Awarded"?"#3a8dde":st==="Live"?"#1a9a6b":st==="Completed"?"#9ca3af":"#cbd5e1";
 const voRowColor=st=>{const s=String(st||"").toLowerCase();if(s.includes("fully claimed"))return"#1a9a6b";if(s.includes("partially"))return"#c45e10";if(s.includes("accepted"))return"#7c3aed";if(s.includes("rejected"))return"#b5b5b5";return"var(--tx)"};
 const isAp=s=>{const u=String(s||"").toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")};
 const isPn=s=>{const u=String(s||"").toUpperCase();return u.includes("PENDING")||u.includes("PRICED")};
@@ -622,18 +625,19 @@ const coordFilt=useMemo(()=>{
 // Project cards data: grouped by project, alphabetical, with per-status counts.
 // Only includes projects that have at least one VO. Excludes system projects (_) and pipeline categories.
 const buildCards=(rows)=>{
+  const pjByName=new Map();pj.forEach(p=>pjByName.set(p.nm,p.st||"Live"));
   const grouped=new Map();
   rows.forEach(v=>{
     if(!isRealProject(v.pj))return;
-    if(!grouped.has(v.pj))grouped.set(v.pj,{name:v.pj,vos:0,total:0,statusCounts:{}});
+    if(!grouped.has(v.pj))grouped.set(v.pj,{name:v.pj,vos:0,total:0,statusCounts:{},projectStatus:pjByName.get(v.pj)||"Live"});
     const g=grouped.get(v.pj);
     g.vos++;g.total+=Number(v.pr)||0;
     VO_ST.forEach(s=>{if(matchStatus(v.st,s.v))g.statusCounts[s.v]=(g.statusCounts[s.v]||0)+1});
   });
   return Array.from(grouped.values()).sort((a,b)=>a.name.localeCompare(b.name));
 };
-const masterProjectCards=useMemo(()=>buildCards(vo),[vo]);
-const coordProjectCards=useMemo(()=>buildCards(coordVO),[coordVO]);
+const masterProjectCards=useMemo(()=>buildCards(vo),[vo,pj]);
+const coordProjectCards=useMemo(()=>buildCards(coordVO),[coordVO,pj]);
 // Search filter — matches project name OR variation name within project's VOs
 const cardMatchesQuery=(c,q,rows)=>{
   if(c.name.toLowerCase().includes(q))return true;
@@ -1000,7 +1004,7 @@ return<div className="pr pr-pf" key={p.nm}>
 {voView==="home"&&<span style={{fontSize:10,color:"var(--t2)",fontStyle:"italic"}}>Read-only — only <b style={{fontStyle:"normal"}}>Status</b> is editable. Click a project to drill in.</span>}
 </div>
 <div style={{display:"flex",gap:4,alignItems:"center"}}>
-<span style={{fontSize:10,color:"var(--t2)"}}>{vo.length} · Approved: {fK(Object.values(voP).reduce((s,v)=>s+v,0))}</span>
+<span style={{fontSize:10,color:"var(--t2)"}}>{(()=>{const scoped=voView==="project"&&selectedVoProject?vo.filter(v=>v.pj===selectedVoProject):voView==="status"&&selectedVoStatus?vo.filter(v=>matchStatus(v.st,selectedVoStatus)):vo;const apTot=scoped.filter(v=>{const u=String(v.st).toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")}).reduce((s,v)=>s+(Number(v.pr)||0),0);return scoped.length+" · Approved: "+fK(apTot)})()}</span>
 </div></div>
 <div style={{padding:"6px 10px",display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",borderBottom:"1px solid var(--bd)"}}>
 <input className="sx" value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder="Search project or variation name"/>
@@ -1009,7 +1013,7 @@ return<div className="pr pr-pf" key={p.nm}>
 <span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(masterFilteredCards.length+" projects · "+vo.length+" VOs"):(voFilt.length+" of "+vo.length)}</span>
 </div>
 {voView==="home"?<div className="pj-grid">
-{masterFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{vo.length===0?"No variations yet.":"No projects match your search."}</div>:masterFilteredCards.map(c=><div key={c.name} className="pj-card" onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all")}}>
+{masterFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{vo.length===0?"No variations yet.":"No projects match your search."}</div>:masterFilteredCards.map(c=><div key={c.name} className="pj-card" style={{"--card-accent":stripeColor(c.projectStatus)}} onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all")}}>
 <div className="pjnm">{c.name}</div>
 <div className="pjmeta">{c.vos} VO{c.vos!==1?"s":""} · {fK(c.total)}</div>
 <div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
@@ -1082,10 +1086,10 @@ return<div className="pr pr-pf" key={p.nm}>
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setVoFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:voFiltTy===t?"var(--ac)":"var(--bd)",background:voFiltTy===t?"var(--ac)":"transparent",color:voFiltTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
 <div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=coordStCnt[s.v]||0;const isActive=voView==="status"?selectedVoStatus===s.v:voFiltSt.includes(s.v);const isDisabled=voView==="status"&&selectedVoStatus!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedVoStatus(s.v)}else if(voView==="project"){setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 <input className="sx" value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder="Search project or variation name"/>
-<span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(coordFilteredCards.length+" projects · "+coordVO.length+" VOs · Read only"):(coordFilt.length+" of "+coordVO.length+" · Read only · Approved: "+coordVO.filter(v=>{const u=String(v.st).toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")}).length)}</span>
+<span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(coordFilteredCards.length+" projects · "+coordVO.length+" VOs · Read only"):(coordFilt.length+" of "+coordVO.length+" · Read only · Approved: $"+coordFilt.filter(v=>{const u=String(v.st).toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")}).reduce((s,v)=>s+(Number(v.pr)||0),0).toLocaleString("en-AU",{maximumFractionDigits:0}))}</span>
 </div>
 {voView==="home"?<div className="pj-grid">
-{coordFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{coordVO.length===0?(coordUser+" has no variations yet."):"No projects match your search."}</div>:coordFilteredCards.map(c=><div key={c.name} className="pj-card" onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all")}}>
+{coordFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{coordVO.length===0?(coordUser+" has no variations yet."):"No projects match your search."}</div>:coordFilteredCards.map(c=><div key={c.name} className="pj-card" style={{"--card-accent":stripeColor(c.projectStatus)}} onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all")}}>
 <div className="pjnm">{c.name}</div>
 <div className="pjmeta">{c.vos} VO{c.vos!==1?"s":""} · {fK(c.total)}</div>
 <div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
