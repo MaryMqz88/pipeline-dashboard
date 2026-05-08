@@ -246,7 +246,7 @@ const isCoordAssigned=(coordField,coord)=>{
   return t.split(",").map(s=>s.trim()).includes(coord.toLowerCase());
 };
 sPj(pD
-  .map(p=>({nm:String(F(p,"Project","PROJECT")).trim(),coord:String(F(p,"COORDINATOR")||"")}))
+  .map(p=>({nm:String(F(p,"Project","PROJECT")).trim(),coord:String(F(p,"COORDINATOR")||""),st:String(F(p,"Status","STATUS"))||"Live"}))
   .filter(p=>!p.nm.startsWith("_"))
   .filter(p=>isCoordAssigned(p.coord,user)));
 sVo(vD.map((v,i)=>({i,_r:v._row!==undefined?v._row:i,
