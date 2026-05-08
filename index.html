@@ -516,7 +516,7 @@ return<tr style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nr?fmP(v.nr):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.oh?fm2(v.oh):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.or2?fmP(v.or2):""}</td>
-<td style={{textAlign:"center",cursor:"default"}} title={v.notes||""}>{v.notes?<span style={{fontSize:14}}>💬</span>:<span style={{color:"var(--t2)",fontSize:12}}>—</span>}</td>
+<td style={{textAlign:"center",cursor:v.notes||!v._pending?"pointer":"default"}} onClick={()=>!v._pending&&onOpenNote&&onOpenNote(v.i)} title={v.notes||"Click to add note"}>{v.notes?<span style={{fontSize:14}}>💬</span>:<span style={{color:"var(--t2)",fontSize:12}}>+</span>}</td>
 </tr>});
  
 const CoordRow=React.memo(function CoordRow({v,vi,coordColW,onOpenNote,hideCols}){
