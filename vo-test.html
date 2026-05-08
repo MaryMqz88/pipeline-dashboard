@@ -153,6 +153,7 @@ const SKIP_PJ=/^(extra\s*sales|day\s*lab[ou]r)$/i;
 const isRealProject=nm=>nm&&!nm.startsWith("_")&&!SKIP_PJ.test(nm);
 const stripeColor=st=>st==="Pending"?"#d9534f":st==="Awarded"?"#3a8dde":st==="Live"?"#1a9a6b":st==="Completed"?"#9ca3af":"#cbd5e1";
 const COL_FIELD={"":null,"☐":null,"Project":"pj","Area on Job":"area","Type":"ty","Var No.":"vn","Sub Ref No.":"srn","Name":"vnm","Date Sub.":"ds","Date Appr.":"da","Price":"pr","Claim %":"claim","Status":"st","Ext.Mat":"em","PFAB":"pf","Margin":null,"#Men":"nmn","NHrs":"nh","NRate":"nr","OTHrs":"oh","OTRate":"or2","Notes":"notes","Push":null};
+const VO_HEADERS_FULL=["","☐","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"];
 const HIDEABLE_COLS=new Set(["Area on Job","Claim %"]);
 const ST_ORDER=["fully claimed","partially claimed","accepted","priced","rejected"];
 const stPri=v=>{const s=String(v||"").toLowerCase();const i=ST_ORDER.findIndex(o=>s.includes(o));return i===-1?99:i};
@@ -459,8 +460,16 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
 
 {/* DETAIL VIEW: table — shown for project drill-in or status flat view */}
 {voView!=="home"&&
-<div className="vw"><datalist id="vo-projects-list">{pj.map(p=><option key={p.nm} value={p.nm}/>)}</datalist><div className="vsc"><table className="vt" style={{width:colW.reduce((a,b,i)=>a+(hideCols.has(["","☐","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"][i])?0:b),0)+"px"}}><colgroup>{colW.map((w,i)=><col key={i} style={{width:(hideCols.has(["","☐","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"][i])?0:w)+"px"}}/>)}</colgroup><thead><tr>
-{(()=>{const headers=["","☐","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"];const eW=(i)=>hideCols.has(headers[i])?0:colW[i];return headers.map((h,ci)=>{if(hideCols.has(h))return null;const fld=COL_FIELD[h];const isSorted=fld&&sortCol===fld;const arrow=isSorted?(sortDir==="asc"?" ▲":" ▼"):"";return<th key={h+ci} className={ci<2?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} onClick={()=>cycleSort(fld)} style={{width:eW(ci),minWidth:30,cursor:fld?"pointer":"default",userSelect:"none",...(ci<8?{position:"sticky",left:Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0),zIndex:5,background:ci<2?"#fff":ci<12?"#eef9f3":ci<15?"#fdf3e9":"#f3eefb"}:{}),borderRight:ci===7?"2px solid var(--bd)":undefined}}>{h==="☐"?<input type="checkbox" checked={voFilt.length>0&&voFilt.every(v2=>selRows.has(v2._r))} onChange={e=>{if(e.target.checked){const n=new Set(selRows);voFilt.forEach(v2=>n.add(v2._r));setSelRows(n)}else{setSelRows(new Set())}}} style={{cursor:"pointer"}}/>:<>{h}{arrow}</>}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/>}</th>})})()}
+<div className="vw"><datalist id="vo-projects-list">{pj.map(p=><option key={p.nm} value={p.nm}/>)}</datalist><div className="vsc"><table className="vt" style={{width:VO_HEADERS_FULL.reduce((a,h,i)=>a+(hideCols.has(h)?0:colW[i]),0)+"px"}}><colgroup>{VO_HEADERS_FULL.map((h,i)=>hideCols.has(h)?null:<col key={i} style={{width:colW[i]+"px"}}/>)}</colgroup><thead><tr>
+{VO_HEADERS_FULL.map((h,ci)=>{
+  if(hideCols.has(h))return null;
+  const eW=k=>hideCols.has(VO_HEADERS_FULL[k])?0:colW[k];
+  const fld=COL_FIELD[h];
+  const isSorted=fld&&sortCol===fld;
+  const arrow=isSorted?(sortDir==="asc"?" ▲":" ▼"):"";
+  const stickyLeft=ci<8?Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0):0;
+  return <th key={h+ci} className={ci<2?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} onClick={()=>cycleSort(fld)} style={{width:eW(ci),minWidth:30,cursor:fld?"pointer":"default",userSelect:"none",...(ci<8?{position:"sticky",left:stickyLeft,zIndex:5,background:ci<2?"#fff":ci<12?"#eef9f3":ci<15?"#fdf3e9":"#f3eefb"}:{}),borderRight:ci===7?"2px solid var(--bd)":undefined}}>{h==="☐"?<input type="checkbox" checked={voFilt.length>0&&voFilt.every(v2=>selRows.has(v2._r))} onChange={e=>{if(e.target.checked){const n=new Set(selRows);voFilt.forEach(v2=>n.add(v2._r));setSelRows(n)}else{setSelRows(new Set())}}} style={{cursor:"pointer"}}/>:<>{h}{arrow}</>}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/>}</th>
+})}
 </tr></thead><tbody>
 {voFilt.length===0?<tr><td colSpan={23} style={{textAlign:"center",padding:20,color:"var(--t2)"}}>No entries.</td></tr>:
 voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="#fff";const hA=hideCols.has("Area on Job"),hC=hideCols.has("Claim %");const w=(i)=>(i===3&&hA)?0:colW[i];return<tr key={v.i} style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving... please wait before editing":editTip(v.eb,v.ea)}>
