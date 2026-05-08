@@ -713,7 +713,38 @@ const load=useCallback(async(silent)=>{
   // Populate cell colors from server (overrides any localStorage state)
   if(ccD.length>=0){const ccm={};ccD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=String(F(row,"Month","MONTH")).trim();const cc=String(F(row,"Column","COLUMN")).trim();const co=String(F(row,"Color","COLOR")).trim();if(pn&&mn&&cc&&co)ccm[nk(pn)+"|||"+mn+"|||"+cc]=co});setCellColors(ccm);try{localStorage.setItem("pipeline-cellColors",JSON.stringify(ccm))}catch{}}
   sPj(prev=>{const newSet=new Set(prev.filter(p=>p._new).map(p=>p.nm));return pD.map(p=>{const obj={nm:String(F(p,"Project","PROJECT","Title")).trim(),jid:String(F(p,"Job ID","JOB ID","JobID")||""),pt:String(F(p,"Payment Terms","PAYMENT TERMS")||""),cp:N(F(p,"ContractPrice","Contract Price","CONTRACT PRICE")),v:N(F(p,"Variations","VARIATIONS")),st:String(F(p,"Status","STATUS"))||"Live",coord:String(F(p,"COORDINATOR")||""),pms:String(F(p,"PROJECT MANAGERS")||""),client:String(F(p,"CLIENT")||""),desc:String(F(p,"DESCRIPTION")||""),addr:String(F(p,"ADDRESS")||""),sd:String(F(p,"START DATE")||""),td:String(F(p,"TARGET COMPLETION")||""),cphone:String(F(p,"CLIENT PHONE")||""),cemail:String(F(p,"CLIENT EMAIL")||""),sm:String(F(p,"SITE MANAGER")||""),eb:String(F(p,"EditedBy","EDITED BY")||""),ea:String(F(p,"EditedAt","EDITED AT")||"")};if(newSet.has(obj.nm))obj._new=true;return obj})});
-  const mm={},mE={};mD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=pM(F(row,"Month","MONTH"));if(!pn||!mn)return;const key=nk(pn)+"|||"+mn;const sV=N(F(row,"Sales","SALES")),eV=N(F(row,"ExtMaterials","EXT-MATERIALS","EXTERNAL MATERIALS")),pV=N(F(row,"ProfabMaterials","PROFAB MATERIALS")),oV=N(F(row,"OtherCosts","OTHER COSTS"));const prev=mm[key]||{Sales:0,ExtMaterials:0,ProfabMaterials:0,OtherCosts:0};mm[key]={Sales:sV||prev.Sales,ExtMaterials:eV||prev.ExtMaterials,ProfabMaterials:pV||prev.ProfabMaterials,OtherCosts:oV||prev.OtherCosts};const eb=String(F(row,"EditedBy","EDITED BY")||""),ea=String(F(row,"EditedAt","EDITED AT")||"");if(eb||ea)mE[key]={by:eb,at:ea}});sMo(mm);sMoE(mE);
+  const mm={},mE={};mD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=pM(F(row,"Month","MONTH"));if(!pn||!mn)return;const key=nk(pn)+"|||"+mn;const sV=N(F(row,"Sales","SALES")),eV=N(F(row,"ExtMaterials","EXT-MATERIALS","EXTERNAL MATERIALS")),pV=N(F(row,"ProfabMaterials","PROFAB MATERIALS")),oV=N(F(row,"OtherCosts","OTHER COSTS"));const prev=mm[key]||{Sales:0,ExtMaterials:0,ProfabMaterials:0,OtherCosts:0};mm[key]={Sales:sV||prev.Sales,ExtMaterials:eV||prev.ExtMaterials,ProfabMaterials:pV||prev.ProfabMaterials,OtherCosts:oV||prev.OtherCosts};const eb=String(F(row,"EditedBy","EDITED BY")||""),ea=String(F(row,"EditedAt","EDITED AT")||"");if(eb||ea)mE[key]={by:eb,at:ea}});
+  // Merge with prev mo: preserve optimistic values for keys still in pendingMoRef (server may not have caught up).
+  // Also reuse object identity for unchanged keys to skip needless re-renders.
+  sMo(prev=>{
+    const merged={};const pending=pendingMoRef.current;
+    const allKeys=new Set([...Object.keys(mm),...Object.keys(prev)]);
+    allKeys.forEach(key=>{
+      const serverVal=mm[key]||{Sales:0,ExtMaterials:0,ProfabMaterials:0,OtherCosts:0};
+      const prevVal=prev[key];
+      const pendingCols=pending.get(key);
+      if(pendingCols){
+        // Has pending writes — merge: server values for non-pending cols, optimistic values for pending cols.
+        // Clear pending entry for any column where server now matches the optimistic value.
+        const merge={...serverVal};
+        const stillPending={};
+        for(const c in pendingCols){
+          if(serverVal[c]===pendingCols[c]){/* server caught up, drop from pending */}
+          else{merge[c]=pendingCols[c];stillPending[c]=pendingCols[c]}
+        }
+        if(Object.keys(stillPending).length===0)pending.delete(key);
+        else pending.set(key,stillPending);
+        merged[key]=merge;
+      }else{
+        // No pending — use server. Reuse prev identity if values match exactly.
+        if(prevVal&&prevVal.Sales===serverVal.Sales&&prevVal.ExtMaterials===serverVal.ExtMaterials&&prevVal.ProfabMaterials===serverVal.ProfabMaterials&&prevVal.OtherCosts===serverVal.OtherCosts){merged[key]=prevVal}
+        else if(mm[key]){merged[key]=serverVal}
+        // If key only existed in prev (not in mm), it was deleted server-side — drop it.
+      }
+    });
+    return merged;
+  });
+  sMoE(mE);
   sVo(prev=>{
     const prevByVid=new Map();
     prev.forEach(p=>{if(p.vid)prevByVid.set(p.vid,p)});
@@ -735,6 +766,11 @@ const coordUserRef=useRef("");useEffect(()=>{coordUserRef.current=coordUser},[co
 // so the reload never fetches stale data mid-edit (which caused status revert flicker).
 const lastEditAtRef=useRef(0);
 const markLocalEdit=()=>{lastEditAtRef.current=Date.now()};
+// Tracks pending mo writes: Map<projectKey|||month, {column: optimisticValue, ...}>.
+// While a key is pending, reload preserves the optimistic value (server may not have it yet).
+// Once the server returns matching data, the pending entry is cleared.
+const pendingMoRef=useRef(new Map());
+const markPendingMo=(p,m,c,val)=>{const k=nk(p)+"|||"+m;const cur=pendingMoRef.current.get(k)||{};cur[c]=val;pendingMoRef.current.set(k,cur)};
 const[actOpen,setActOpen]=useState(false);
 const[actData,setActData]=useState({presence:[],activity:[]});
 // Heartbeat: ping every 60s while logged in (lock-free on server)
@@ -779,7 +815,11 @@ const voExt=useMemo(()=>{const m={};vo.forEach(v=>{if(isAp(v.st))m[nk(v.pj)]=(m[
 const voPfab=useMemo(()=>{const m={};vo.forEach(v=>{if(isAp(v.st))m[nk(v.pj)]=(m[nk(v.pj)]||0)+v.pf});return m},[vo]);
 const pjOpts=useMemo(()=>pj.filter(p=>!p.nm.startsWith("_")),[pj]);
  
-const uC=useCallback(async(p,m,c,val)=>{markLocalEdit();sMo(pr=>({...pr,[nk(p)+"|||"+m]:{...(pr[nk(p)+"|||"+m]||{}),[c]:val}}));sSv(true);await enq(()=>aP({action:"updateCell",project:p,month:m,column:c,value:val,editedBy:unRef.current,editedAt:new Date().toLocaleString("en-AU")}));sLs(new Date());sSv(false)},[]);
+const uC=useCallback(async(p,m,c,val)=>{markLocalEdit();markPendingMo(p,m,c,val);sMo(pr=>({...pr,[nk(p)+"|||"+m]:{...(pr[nk(p)+"|||"+m]||{}),[c]:val}}));sSv(true);await enq(()=>aP({action:"updateCell",project:p,month:m,column:c,value:val,editedBy:unRef.current,editedAt:new Date().toLocaleString("en-AU")}));sLs(new Date());sSv(false);
+  // Clear pending mark after save resolves. Next reload will use server values.
+  // If save failed, server hasn't been updated, so reload will revert the optimistic value (correct behavior).
+  setTimeout(()=>{const k=nk(p)+"|||"+m;const cur=pendingMoRef.current.get(k);if(cur){delete cur[c];if(Object.keys(cur).length===0)pendingMoRef.current.delete(k);else pendingMoRef.current.set(k,cur)}},2000);
+},[]);
 const uP=useCallback(async(nm,fd,val)=>{markLocalEdit();const fl=fd.toLowerCase();const prop=fl.includes("contract")?"cp":fl.includes("job")?"jid":fl.includes("status")?"st":fl==="variations"?"v":fl==="coordinator"?"coord":fl==="project managers"?"pms":fl==="client"?"client":fl==="site manager"?"sm":fl==="address"?"addr":fl==="start date"?"sd":fl==="target completion"?"td":fl==="client phone"?"cphone":fl==="client email"?"cemail":fl==="description"?"desc":fl==="payment terms"?"pt":"v";const found=pjRef.current.find(p=>p.nm===nm);const original=found?(found[prop]||""):"";sPj(pr=>pr.map(p=>p.nm===nm?{...p,[prop]:val}:p));sSv(true);const result=await enq(()=>aP({action:"updateProject",name:nm,field:fd,value:val,editedBy:unRef.current,editedAt:new Date().toLocaleString("en-AU")}));if(result&&result.error){sPj(pr=>pr.map(p=>p.nm===nm?{...p,[prop]:original,_v:(p._v||0)+1}:p))}sLs(new Date());sSv(false)},[]);
 const renP=useCallback(async(old,nw)=>{const nwT=String(nw||"").trim();if(!nwT)return;if(nwT.toLowerCase()===old.toLowerCase()){return}if(pjRef.current.some(p=>p.nm!==old&&p.nm.toLowerCase()===nwT.toLowerCase())){alert("A project named \""+nwT+"\" already exists.");return}markLocalEdit();sPj(pr=>pr.map(p=>p.nm===old?{...p,nm:nwT}:p));sMo(prev=>{const next={};Object.entries(prev).forEach(([k,v])=>{next[k.startsWith(nk(old)+"|||")?nk(nwT)+"|||"+k.split("|||")[1]:k]=v});return next});sSv(true);const result=await enq(()=>aP({action:"updateProject",name:old,field:"Project",value:nwT,editedBy:unRef.current,editedAt:new Date().toLocaleString("en-AU")}));if(result&&result.error){sPj(pr=>pr.map(p=>p.nm===nwT?{...p,nm:old}:p));sMo(prev=>{const next={};Object.entries(prev).forEach(([k,v])=>{next[k.startsWith(nk(nwT)+"|||")?nk(old)+"|||"+k.split("|||")[1]:k]=v});return next})}sLs(new Date());sSv(false)},[]);
 const loadCoordVO=async(user)=>{setCoordUser(user);sLd(true);try{const r=await fetch(API+"?action=getVariations&user="+encodeURIComponent(user)+"&passphrase="+encodeURIComponent(getPP()));const d=await r.json();const arr=d.variations||d.vos||[];setCoordVO(arr.map((v,i)=>({i,_r:v._row!==undefined?v._row:i,vid:String(F(v,"VO_ID")||""),pj:String(F(v,"PROJECT","Project")).trim(),area:String(F(v,"AREA ON JOB","")||""),ty:String(F(v,"TYPE","Type")),vn:String(F(v,"VARIATION NO.")),srn:String(F(v,"SUB REF NO.","Sub Ref No.")||""),vnm:String(F(v,"VARIATION NAME")),ds:fmD(String(F(v,"DATE SUBMITTED"))),da:fmD(String(F(v,"DATE APPROVED"))),pr:N(F(v,"PRICE","REVENUE")),claim:String(F(v,"CLAIM %","")||""),st:String(F(v,"STATUS","Status")),em:N(F(v,"EXTERNAL MATERIALS")),pf:N(F(v,"PFAB MATERIALS")),nmn:N(F(v,"NO. OF MEN")),nh:N(F(v,"NORMAL HOURS")),nr:N(F(v,"NORMAL RATE")),oh:N(F(v,"OVERTIME HOURS")),or2:N(F(v,"OVERTIME RATE")),notes:String(F(v,"NOTES","Notes")||""),creator:String(F(v,"CREATOR")||""),pushedAt:String(F(v,"PUSHED AT")||""),pushedBy:String(F(v,"PUSHED BY")||""),eb:String(F(v,"EditedBy","EDITED BY")||""),ea:String(F(v,"EditedAt","EDITED AT")||"")})));sLd(false)}catch(e){sEr("Failed: "+e.message);sLd(false)}};
