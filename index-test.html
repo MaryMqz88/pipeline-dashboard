@@ -392,6 +392,8 @@ const isRealProject=nm=>nm&&!nm.startsWith("_")&&!SKIP_PJ.test(nm);
 const stripeColor=st=>st==="Pending"?"#d9534f":st==="Awarded"?"#3a8dde":st==="Live"?"#1a9a6b":st==="Completed"?"#9ca3af":"#cbd5e1";
 // Map header label → row field for sorting/hiding. Null = not sortable.
 const COL_FIELD={"":null,"Project":"pj","Area on Job":"area","Type":"ty","Var No.":"vn","Sub Ref No.":"srn","Name":"vnm","Date Sub.":"ds","Date Appr.":"da","Price":"pr","Claim %":"claim","Status":"st","Ext.Mat":"em","PFAB":"pf","Margin":null,"#Men":"nmn","NHrs":"nh","NRate":"nr","OTHrs":"oh","OTRate":"or2","Notes":"notes","Push":null,"☐":null};
+const VO_HEADERS=["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes"];
+const COORD_HEADERS=["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"];
 const HIDEABLE_COLS=new Set(["Area on Job","Claim %"]);
 // Status priority: claimed>partial>accepted>priced>rejected>blank
 const ST_ORDER=["fully claimed","partially claimed","accepted","priced","rejected"];
@@ -487,7 +489,6 @@ return<div className="notes-modal" onClick={onCancel}>
 <button className="pl gn" onClick={()=>onSave(t)}>Save</button>
 </div></div></div>});
  
-const VORow=React.memo(function VORow({v,colW,uV,dVO,onOpenNote}){
 const VORow=React.memo(function VORow({v,colW,uV,dVO,onOpenNote,hideCols}){
 const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="#fff";
 const ro={color:rc,padding:"2px 4px",cursor:"default",userSelect:"text"};
@@ -1062,8 +1063,16 @@ return<div className="pr pr-pf" key={p.nm}>
 <div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 </div>)}
 </div>:voFilt.length===0?<div className="em">No entries match filter.</div>:
-<div className="vsc-fx"><table className="vt" style={{width:colW.reduce((a,b,i)=>a+(voHideCols.has(["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes"][i])?0:b),0)+"px"}}><colgroup>{colW.map((w,i)=><col key={i} style={{width:(voHideCols.has(["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes"][i])?0:w)+"px"}}/>)}</colgroup><thead><tr>
-{(()=>{const headers=["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes"];const eW=(i)=>voHideCols.has(headers[i])?0:colW[i];return headers.map((h,ci)=>{if(voHideCols.has(h))return null;const fld=COL_FIELD[h];const isSorted=fld&&voSortCol===fld;const arrow=isSorted?(voSortDir==="asc"?" ▲":" ▼"):"";return<th key={h} className={ci===0?"":ci<11?"tg":ci<14?"ty":ci<19?"tp":"tg"} onClick={()=>cycleSort(setVoSortCol,setVoSortDir,voSortCol,voSortDir,fld)} style={{width:eW(ci),minWidth:40,cursor:fld?"pointer":"default",userSelect:"none",...(ci<7?{position:"sticky",left:Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0),zIndex:5,background:ci<11?"#eef9f3":ci<14?"#fdf3e9":ci<19?"#f3eefb":"#eef9f3"}:{}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}{arrow}<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/></th>})})()}
+<div className="vsc-fx"><table className="vt" style={{width:VO_HEADERS.reduce((a,h,i)=>a+(voHideCols.has(h)?0:colW[i]),0)+"px"}}><colgroup>{VO_HEADERS.map((h,i)=>voHideCols.has(h)?null:<col key={i} style={{width:colW[i]+"px"}}/>)}</colgroup><thead><tr>
+{VO_HEADERS.map((h,ci)=>{
+  if(voHideCols.has(h))return null;
+  const eW=k=>voHideCols.has(VO_HEADERS[k])?0:colW[k];
+  const fld=COL_FIELD[h];
+  const isSorted=fld&&voSortCol===fld;
+  const arrow=isSorted?(voSortDir==="asc"?" ▲":" ▼"):"";
+  const stickyLeft=ci<7?Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0):0;
+  return <th key={h} className={ci===0?"":ci<11?"tg":ci<14?"ty":ci<19?"tp":"tg"} onClick={()=>cycleSort(setVoSortCol,setVoSortDir,voSortCol,voSortDir,fld)} style={{width:eW(ci),minWidth:40,cursor:fld?"pointer":"default",userSelect:"none",...(ci<7?{position:"sticky",left:stickyLeft,zIndex:5,background:ci<11?"#eef9f3":ci<14?"#fdf3e9":ci<19?"#f3eefb":"#eef9f3"}:{}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}{arrow}<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/></th>
+})}
 </tr></thead><tbody>{voFilt.map(v=><VORow key={v.i} v={v} colW={colW} uV={uV} dVO={dVO} onOpenNote={setNoteEdit} hideCols={voHideCols}/>)}</tbody></table></div>}
 </div>}
 
@@ -1139,8 +1148,16 @@ return<div className="pr pr-pf" key={p.nm}>
 <div className="pjmeta">{c.vos} VO{c.vos!==1?"s":""} · {fK(c.total)}</div>
 <div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 </div>)}
-</div>:<div className="vsc-fx"><table className="vt" style={{width:coordColW.reduce((a,b)=>a+b,0)+"px",minWidth:coordColW.reduce((a,b)=>a+b,0)+"px"}}><colgroup>{coordColW.map((w,i)=><col key={i} style={{width:w+"px"}}/>)}</colgroup><thead><tr>
-{(()=>{const headers=["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"];const eW=(i)=>coordHideCols.has(headers[i])?0:coordColW[i];return headers.map((h,ci)=>{if(coordHideCols.has(h))return null;const fld=COL_FIELD[h];const isSorted=fld&&coordSortCol===fld;const arrow=isSorted?(coordSortDir==="asc"?" ▲":" ▼"):"";return<th key={h+"_"+ci} className={ci===0?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} onClick={()=>cycleSort(setCoordSortCol,setCoordSortDir,coordSortCol,coordSortDir,fld)} style={{width:eW(ci),minWidth:30,cursor:fld?"pointer":"default",userSelect:"none",...(ci<7?{position:"sticky",left:Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0),top:0,zIndex:5,background:ci===0?"#fff":"#eef9f3"}:{top:0,position:"sticky",zIndex:3,background:ci<12?"#eef9f3":ci<15?"#fdf3e9":ci<20?"#f3eefb":"#eef9f3"}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}{arrow}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startCoordResize(ci,e)}}/>}</th>})})()}
+</div>:<div className="vsc-fx"><table className="vt" style={{width:COORD_HEADERS.reduce((a,h,i)=>a+(coordHideCols.has(h)?0:coordColW[i]),0)+"px"}}><colgroup>{COORD_HEADERS.map((h,i)=>coordHideCols.has(h)?null:<col key={i} style={{width:coordColW[i]+"px"}}/>)}</colgroup><thead><tr>
+{COORD_HEADERS.map((h,ci)=>{
+  if(coordHideCols.has(h))return null;
+  const eW=k=>coordHideCols.has(COORD_HEADERS[k])?0:coordColW[k];
+  const fld=COL_FIELD[h];
+  const isSorted=fld&&coordSortCol===fld;
+  const arrow=isSorted?(coordSortDir==="asc"?" ▲":" ▼"):"";
+  const stickyLeft=ci<7?Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0):0;
+  return <th key={h+"_"+ci} className={ci===0?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} onClick={()=>cycleSort(setCoordSortCol,setCoordSortDir,coordSortCol,coordSortDir,fld)} style={{width:eW(ci),minWidth:30,cursor:fld?"pointer":"default",userSelect:"none",...(ci<7?{position:"sticky",left:stickyLeft,top:0,zIndex:5,background:ci===0?"#fff":"#eef9f3"}:{top:0,position:"sticky",zIndex:3,background:ci<12?"#eef9f3":ci<15?"#fdf3e9":ci<20?"#f3eefb":"#eef9f3"}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}{arrow}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startCoordResize(ci,e)}}/>}</th>
+})}
 </tr></thead><tbody>
 {coordFilt.length===0?<tr><td colSpan={22} style={{textAlign:"center",padding:20,color:"var(--t2)"}}>No entries match filter.</td></tr>:
 coordFilt.map((v,vi)=><CoordRow key={vi} v={v} vi={vi} coordColW={coordColW} onOpenNote={setCoordNoteView} hideCols={coordHideCols}/>)}
