@@ -152,6 +152,21 @@ const matchStatus=(voSt,pillV)=>{
 const SKIP_PJ=/^(extra\s*sales|day\s*lab[ou]r)$/i;
 const isRealProject=nm=>nm&&!nm.startsWith("_")&&!SKIP_PJ.test(nm);
 const stripeColor=st=>st==="Pending"?"#d9534f":st==="Awarded"?"#3a8dde":st==="Live"?"#1a9a6b":st==="Completed"?"#9ca3af":"#cbd5e1";
+const COL_FIELD={"":null,"☐":null,"Project":"pj","Area on Job":"area","Type":"ty","Var No.":"vn","Sub Ref No.":"srn","Name":"vnm","Date Sub.":"ds","Date Appr.":"da","Price":"pr","Claim %":"claim","Status":"st","Ext.Mat":"em","PFAB":"pf","Margin":null,"#Men":"nmn","NHrs":"nh","NRate":"nr","OTHrs":"oh","OTRate":"or2","Notes":"notes","Push":null};
+const HIDEABLE_COLS=new Set(["Area on Job","Claim %"]);
+const ST_ORDER=["fully claimed","partially claimed","accepted","priced","rejected"];
+const stPri=v=>{const s=String(v||"").toLowerCase();const i=ST_ORDER.findIndex(o=>s.includes(o));return i===-1?99:i};
+const cmp=(a,b,col,dir)=>{
+  let av=a[col],bv=b[col];
+  const ae=av==null||av==="",be=bv==null||bv==="";
+  if(ae&&!be)return 1;if(!ae&&be)return -1;if(ae&&be)return 0;
+  let r;
+  if(col==="ds"||col==="da"){r=(dsToTs(av)||0)-(dsToTs(bv)||0)}
+  else if(col==="st"){r=stPri(av)-stPri(bv)}
+  else if(typeof av==="number"||(!isNaN(parseFloat(av))&&typeof av!=="boolean"&&col!=="vn"&&col!=="srn")){r=(parseFloat(av)||0)-(parseFloat(bv)||0)}
+  else{r=String(av).toLowerCase().localeCompare(String(bv).toLowerCase())}
+  return dir==="desc"?-r:r;
+};
 const voRowColor=st=>{const s=String(st||"").toLowerCase();if(s.includes("fully claimed"))return"#1a9a6b";if(s.includes("partially"))return"#c45e10";if(s.includes("accepted"))return"#7c3aed";if(s.includes("rejected"))return"#b5b5b5";return"var(--tx)"};
 
 function EC({value,onChange,cls,style,fmt}){const[e,sE]=useState(false);const[d,sD]=useState("");const r=useRef();
@@ -198,6 +213,11 @@ const filtSt_d=useDeferredValue(filtSt);
 const[selRows,setSelRows]=useState(new Set());
 const[selCells,setSelCells]=useState([]);
 const clearSel=()=>setSelCells([]);
+const[sortCol,setSortCol]=useState(null);const[sortDir,setSortDir]=useState(null);
+const[hideCols,setHideCols]=useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("voreg-hide-coord")||"[]"))}catch{return new Set()}});
+useEffect(()=>{try{localStorage.setItem("voreg-hide-coord",JSON.stringify(Array.from(hideCols)))}catch{}},[hideCols]);
+const cycleSort=(colKey)=>{if(!colKey)return;if(sortCol!==colKey){setSortCol(colKey);setSortDir("asc")}else if(sortDir==="asc"){setSortDir("desc")}else{setSortCol(null);setSortDir(null)}};
+const toggleHide=(label)=>{const newSet=new Set(hideCols);if(newSet.has(label))newSet.delete(label);else{newSet.add(label);if(sortCol===COL_FIELD[label]){setSortCol(null);setSortDir(null)}}setHideCols(newSet)};
 // Drill-in navigation state for the new card-grid home view
 const[voView,setVoView]=useState("home");
 const[selectedProject,setSelectedProject]=useState(null);
@@ -318,8 +338,11 @@ const voFilt=useMemo(()=>{
   }
   if(filtTy_d!=="all")f=f.filter(v=>v.ty===filtTy_d);
   if(filtSt_d.length>0)f=f.filter(v=>filtSt_d.some(s=>matchStatus(v.st,s)));
-  return f.slice().sort((a,b)=>{const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad})
-},[vo,voView,selectedProject,selectedStatusOnly,filtPj_d,filtTy_d,filtSt_d]);
+  return f.slice().sort((a,b)=>{
+    if(sortCol)return cmp(a,b,sortCol,sortDir||"asc");
+    const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad
+  })
+},[vo,voView,selectedProject,selectedStatusOnly,filtPj_d,filtTy_d,filtSt_d,sortCol,sortDir]);
 
 // Project cards: only projects that have VOs. Excludes system + pipeline categories.
 const projectCards=useMemo(()=>{
@@ -408,6 +431,8 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:filtTy===t?"var(--ac)":"var(--bd)",background:filtTy===t?"var(--ac)":"transparent",color:filtTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
 <div style={{display:"flex",gap:2,flexWrap:"wrap"}}>{VO_ST.map(s=>{const cnt=stCnt[s.v]||0;const isActive=voView==="status"?selectedStatusOnly===s.v:filtSt.includes(s.v);const isDisabled=voView==="status"&&selectedStatusOnly!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedStatusOnly(s.v)}else if(voView==="project"){setFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 <input className="sx" placeholder="Search project or variation name" value={filtPj} onChange={e=>setFiltPj(e.target.value)}/>
+{Array.from(HIDEABLE_COLS).map(label=><label key={label} style={{display:"flex",alignItems:"center",gap:3,fontSize:9,color:"var(--t2)",cursor:"pointer",userSelect:"none"}}><input type="checkbox" checked={!hideCols.has(label)} onChange={()=>toggleHide(label)} style={{cursor:"pointer"}}/>{label}</label>)}
+{sortCol&&<span style={{fontSize:9,padding:"2px 6px",border:"1px solid var(--ac)",borderRadius:10,background:"var(--ac)",color:"#fff",display:"flex",gap:4,alignItems:"center",cursor:"pointer"}} onClick={()=>{setSortCol(null);setSortDir(null)}} title="Click to clear sort">Sort: {Object.keys(COL_FIELD).find(k=>COL_FIELD[k]===sortCol)||sortCol} {sortDir==="desc"?"▼":"▲"} ✕</span>}
 <span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(filteredCards.length+" projects · "+vo.length+" VOs · Approved: $"+apTotal.toLocaleString("en-AU",{maximumFractionDigits:0})):(voFilt.length+" of "+vo.length+" · Approved: $"+apTotal.toLocaleString("en-AU",{maximumFractionDigits:0}))}</span>
 </div>
 
@@ -434,23 +459,23 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
 
 {/* DETAIL VIEW: table — shown for project drill-in or status flat view */}
 {voView!=="home"&&
-<div className="vw"><datalist id="vo-projects-list">{pj.map(p=><option key={p.nm} value={p.nm}/>)}</datalist><div className="vsc"><table className="vt" style={{width:colW.reduce((a,b)=>a+b,0)+"px",minWidth:colW.reduce((a,b)=>a+b,0)+"px"}}><colgroup>{colW.map((w,i)=><col key={i} style={{width:w+"px"}}/>)}</colgroup><thead><tr>
-{["","☐","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"].map((h,ci)=><th key={h+ci} className={ci<2?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} style={{width:colW[ci],minWidth:30,...(ci<8?{position:"sticky",left:colW.slice(0,ci).reduce((a,b)=>a+b,0),zIndex:5,background:ci<2?"#fff":ci<12?"#eef9f3":ci<15?"#fdf3e9":"#f3eefb"}:{}),borderRight:ci===7?"2px solid var(--bd)":undefined}}>{h==="☐"?<input type="checkbox" checked={voFilt.length>0&&voFilt.every(v2=>selRows.has(v2._r))} onChange={e=>{if(e.target.checked){const n=new Set(selRows);voFilt.forEach(v2=>n.add(v2._r));setSelRows(n)}else{setSelRows(new Set())}}} style={{cursor:"pointer"}}/>:h}{ci>0&&<div className="col-resize" onMouseDown={e=>startResize(ci,e)}/>}</th>)}
+<div className="vw"><datalist id="vo-projects-list">{pj.map(p=><option key={p.nm} value={p.nm}/>)}</datalist><div className="vsc"><table className="vt" style={{width:colW.reduce((a,b,i)=>a+(hideCols.has(["","☐","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"][i])?0:b),0)+"px"}}><colgroup>{colW.map((w,i)=><col key={i} style={{width:(hideCols.has(["","☐","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"][i])?0:w)+"px"}}/>)}</colgroup><thead><tr>
+{(()=>{const headers=["","☐","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"];const eW=(i)=>hideCols.has(headers[i])?0:colW[i];return headers.map((h,ci)=>{if(hideCols.has(h))return null;const fld=COL_FIELD[h];const isSorted=fld&&sortCol===fld;const arrow=isSorted?(sortDir==="asc"?" ▲":" ▼"):"";return<th key={h+ci} className={ci<2?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} onClick={()=>cycleSort(fld)} style={{width:eW(ci),minWidth:30,cursor:fld?"pointer":"default",userSelect:"none",...(ci<8?{position:"sticky",left:Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0),zIndex:5,background:ci<2?"#fff":ci<12?"#eef9f3":ci<15?"#fdf3e9":"#f3eefb"}:{}),borderRight:ci===7?"2px solid var(--bd)":undefined}}>{h==="☐"?<input type="checkbox" checked={voFilt.length>0&&voFilt.every(v2=>selRows.has(v2._r))} onChange={e=>{if(e.target.checked){const n=new Set(selRows);voFilt.forEach(v2=>n.add(v2._r));setSelRows(n)}else{setSelRows(new Set())}}} style={{cursor:"pointer"}}/>:<>{h}{arrow}</>}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/>}</th>})})()}
 </tr></thead><tbody>
 {voFilt.length===0?<tr><td colSpan={23} style={{textAlign:"center",padding:20,color:"var(--t2)"}}>No entries.</td></tr>:
-voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="#fff";return<tr key={v.i} style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving... please wait before editing":editTip(v.eb,v.ea)}>
+voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="#fff";const hA=hideCols.has("Area on Job"),hC=hideCols.has("Claim %");const w=(i)=>(i===3&&hA)?0:colW[i];return<tr key={v.i} style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving... please wait before editing":editTip(v.eb,v.ea)}>
 <td style={{textAlign:"center",padding:0,width:24,position:"sticky",left:0,zIndex:2,background:bg}}><button onClick={()=>dVO(v)} style={{background:"none",border:"none",color:"var(--rd)",cursor:"pointer",fontSize:14,fontWeight:700,opacity:.4}} onMouseEnter={e=>e.target.style.opacity=1} onMouseLeave={e=>e.target.style.opacity=.4} title="Delete">×</button></td>
-<td style={{textAlign:"center",padding:0,position:"sticky",left:colW[0],zIndex:2,background:bg}}><input type="checkbox" checked={selRows.has(v._r)} onChange={e=>{const n=new Set(selRows);if(e.target.checked)n.add(v._r);else n.delete(v._r);setSelRows(n)}} style={{cursor:"pointer"}}/></td>
-<td style={{position:"sticky",left:colW[0]+colW[1],zIndex:2,background:bg}}><DebInput list="vo-projects-list" value={v.pj} onSave={val=>uV(v.i,"pj",val)} style={{color:rc,width:"100%"}}/></td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2],zIndex:2,background:bg}}><DebInput value={v.area||""} onSave={val=>uV(v.i,"area",val)} style={{color:rc,width:"100%"}}/></td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3],zIndex:2,background:bg}}><select value={v.ty} onChange={e=>uV(v.i,"ty",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,width:"100%"}}><option>VO</option><option>DL</option></select></td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3]+colW[4],zIndex:2,background:bg}}><DebInput value={v.vn} onSave={val=>uV(v.i,"vn",val)} style={{color:rc}}/></td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3]+colW[4]+colW[5],zIndex:2,background:bg}}><DebInput value={v.srn||""} onSave={val=>uV(v.i,"srn",val)} style={{color:rc}}/></td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3]+colW[4]+colW[5]+colW[6],zIndex:2,borderRight:"2px solid var(--bd)",background:bg}}><DebInput value={v.vnm} onSave={val=>uV(v.i,"vnm",val)} maxLen={100} style={{color:rc}}/></td>
+<td style={{textAlign:"center",padding:0,position:"sticky",left:w(0),zIndex:2,background:bg}}><input type="checkbox" checked={selRows.has(v._r)} onChange={e=>{const n=new Set(selRows);if(e.target.checked)n.add(v._r);else n.delete(v._r);setSelRows(n)}} style={{cursor:"pointer"}}/></td>
+<td style={{position:"sticky",left:w(0)+w(1),zIndex:2,background:bg}}><DebInput list="vo-projects-list" value={v.pj} onSave={val=>uV(v.i,"pj",val)} style={{color:rc,width:"100%"}}/></td>
+{!hA&&<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg}}><DebInput value={v.area||""} onSave={val=>uV(v.i,"area",val)} style={{color:rc,width:"100%"}}/></td>}
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3),zIndex:2,background:bg}}><select value={v.ty} onChange={e=>uV(v.i,"ty",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,width:"100%"}}><option>VO</option><option>DL</option></select></td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4),zIndex:2,background:bg}}><DebInput value={v.vn} onSave={val=>uV(v.i,"vn",val)} style={{color:rc}}/></td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5),zIndex:2,background:bg}}><DebInput value={v.srn||""} onSave={val=>uV(v.i,"srn",val)} style={{color:rc}}/></td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5)+w(6),zIndex:2,borderRight:"2px solid var(--bd)",background:bg}}><DebInput value={v.vnm} onSave={val=>uV(v.i,"vnm",val)} maxLen={100} style={{color:rc}}/></td>
 <td><DebInput value={v.ds} onSave={val=>uV(v.i,"ds",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc}}/></td>
 <td><DebInput value={v.da} onSave={val=>uV(v.i,"da",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc}}/></td>
 <td style={{textAlign:"right"}}><EC value={v.pr} onChange={val=>uV(v.i,"pr",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
-<td><DebInput value={v.claim||""} onSave={val=>uV(v.i,"claim",val)} style={{color:rc,width:"100%"}}/></td>
+{!hC&&<td><DebInput value={v.claim||""} onSave={val=>uV(v.i,"claim",val)} style={{color:rc,width:"100%"}}/></td>}
 <td><select value={v.st} onChange={e=>uV(v.i,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,fontWeight:600,width:"100%"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
 <td style={{textAlign:"right"}}><EC value={v.em} onChange={val=>uV(v.i,"em",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
 <td style={{textAlign:"right"}}><EC value={v.pf} onChange={val=>uV(v.i,"pf",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
