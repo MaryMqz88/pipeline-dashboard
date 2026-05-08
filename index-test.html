@@ -32,7 +32,7 @@
 .pl.on{background:var(--a2);border-color:var(--a2);color:#fff}.pl:hover:not(.on){border-color:var(--t2);color:var(--tx)}
 .pl.gn{border-color:var(--gn);color:var(--gn)}.pl.gn:hover{background:var(--gn);color:var(--bg)}
 .dv{width:1px;height:16px;background:var(--bd);margin:0 3px}
-.sx{flex:1;min-width:120px;padding:4px 10px;border-radius:4px;border:1px solid var(--bd);background:var(--s1);color:var(--tx);font-family:var(--ft);font-size:10px;outline:none}
+.sx{flex:0 0 240px;width:240px;padding:4px 10px;border-radius:4px;border:1px solid var(--bd);background:var(--s1);color:var(--tx);font-family:var(--ft);font-size:10px;outline:none}
 .sx:focus{border-color:var(--ac)}.sx::placeholder{color:var(--t2)}
 .af{background:var(--s2);border:1px solid var(--bd);border-radius:6px;padding:8px;margin-bottom:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:end}
 .af label{font-size:9px;color:var(--t2);display:block;text-transform:uppercase;font-weight:700}
@@ -416,9 +416,9 @@ return s}
 function nk(s){return String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"")}
 function dsToTs(ds){if(!ds)return 0;const m=/^(\d{1,2})[-\/]([A-Za-z]{3})[-\/](\d{2,4})$/.exec(String(ds).trim());if(!m)return 0;const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};const mi=months[m[2].toLowerCase()];if(mi===undefined)return 0;let y=parseInt(m[3]);if(y<100)y+=2000;return y*10000+mi*100+parseInt(m[1])}
 const EC_COLORS={red:"var(--rd)",green:"var(--gn)",orange:"#c45e10",blue:"var(--ac)"};
-const EC=React.memo(function EC({value,onChange,cls,color,onContext,style,fmt}){const[e,sE]=useState(false);const[d,sD]=useState("");const r=useRef();
+const EC=React.memo(function EC({value,onChange,cls,color,onContext,style,fmt}){const[e,sE]=useState(false);const[d,sD]=useState("");const r=useRef();const ocR=useRef(onChange);ocR.current=onChange;
 useEffect(()=>{if(e&&r.current)r.current.focus()},[e]);
-const c=()=>{sE(false);const n=parseFloat(d.replace(/,/g,""))||0;if(n!==(value||0))onChange(n)};
+const c=()=>{sE(false);const n=parseFloat(d.replace(/,/g,""))||0;if(n!==(value||0))ocR.current(n)};
 if(e)return<input ref={r} className="ci" value={d} onChange={x=>sD(x.target.value)} onBlur={c} onKeyDown={x=>{if(x.key==="Enter")c();if(x.key==="Escape")sE(false)}}/>;
 const isRed=color==="red";
 const inlineColor=color&&color!=="default"&&color!=="red"?{color:EC_COLORS[color]}:{};
@@ -668,7 +668,18 @@ const load=useCallback(async(silent)=>{
   if(ccD.length>=0){const ccm={};ccD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=String(F(row,"Month","MONTH")).trim();const cc=String(F(row,"Column","COLUMN")).trim();const co=String(F(row,"Color","COLOR")).trim();if(pn&&mn&&cc&&co)ccm[nk(pn)+"|||"+mn+"|||"+cc]=co});setCellColors(ccm);try{localStorage.setItem("pipeline-cellColors",JSON.stringify(ccm))}catch{}}
   sPj(prev=>{const newSet=new Set(prev.filter(p=>p._new).map(p=>p.nm));return pD.map(p=>{const obj={nm:String(F(p,"Project","PROJECT","Title")).trim(),jid:String(F(p,"Job ID","JOB ID","JobID")||""),pt:String(F(p,"Payment Terms","PAYMENT TERMS")||""),cp:N(F(p,"ContractPrice","Contract Price","CONTRACT PRICE")),v:N(F(p,"Variations","VARIATIONS")),st:String(F(p,"Status","STATUS"))||"Live",coord:String(F(p,"COORDINATOR")||""),pms:String(F(p,"PROJECT MANAGERS")||""),client:String(F(p,"CLIENT")||""),desc:String(F(p,"DESCRIPTION")||""),addr:String(F(p,"ADDRESS")||""),sd:String(F(p,"START DATE")||""),td:String(F(p,"TARGET COMPLETION")||""),cphone:String(F(p,"CLIENT PHONE")||""),cemail:String(F(p,"CLIENT EMAIL")||""),sm:String(F(p,"SITE MANAGER")||""),eb:String(F(p,"EditedBy","EDITED BY")||""),ea:String(F(p,"EditedAt","EDITED AT")||"")};if(newSet.has(obj.nm))obj._new=true;return obj})});
   const mm={},mE={};mD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=pM(F(row,"Month","MONTH"));if(!pn||!mn)return;const key=nk(pn)+"|||"+mn;const sV=N(F(row,"Sales","SALES")),eV=N(F(row,"ExtMaterials","EXT-MATERIALS","EXTERNAL MATERIALS")),pV=N(F(row,"ProfabMaterials","PROFAB MATERIALS")),oV=N(F(row,"OtherCosts","OTHER COSTS"));const prev=mm[key]||{Sales:0,ExtMaterials:0,ProfabMaterials:0,OtherCosts:0};mm[key]={Sales:sV||prev.Sales,ExtMaterials:eV||prev.ExtMaterials,ProfabMaterials:pV||prev.ProfabMaterials,OtherCosts:oV||prev.OtherCosts};const eb=String(F(row,"EditedBy","EDITED BY")||""),ea=String(F(row,"EditedAt","EDITED AT")||"");if(eb||ea)mE[key]={by:eb,at:ea}});sMo(mm);sMoE(mE);
-  sVo(vD.map((v,i)=>({i,_r:v._row!==undefined?v._row:i,vid:String(F(v,"VO_ID")||""),pj:String(F(v,"PROJECT","Project")).trim(),area:String(F(v,"AREA ON JOB","")||""),ty:String(F(v,"TYPE","Type")),vn:String(F(v,"VARIATION NO.")),srn:String(F(v,"SUB REF NO.","Sub Ref No.")||""),vnm:String(F(v,"VARIATION NAME")),ds:fmD(String(F(v,"DATE SUBMITTED"))),da:fmD(String(F(v,"DATE APPROVED"))),pr:N(F(v,"PRICE","REVENUE")),claim:String(F(v,"CLAIM %","")||""),st:String(F(v,"STATUS","Status")),em:N(F(v,"EXTERNAL MATERIALS")),pf:N(F(v,"PFAB MATERIALS")),nmn:N(F(v,"NO. OF MEN")),nh:N(F(v,"NORMAL HOURS")),nr:N(F(v,"NORMAL RATE")),oh:N(F(v,"OVERTIME HOURS")),or2:N(F(v,"OVERTIME RATE")),notes:String(F(v,"NOTES","Notes")||""),creator:String(F(v,"CREATOR")||""),pushedAt:String(F(v,"PUSHED AT")||""),pushedBy:String(F(v,"PUSHED BY")||""),eb:String(F(v,"EditedBy","EDITED BY")||""),ea:String(F(v,"EditedAt","EDITED AT")||"")}))); 
+  sVo(prev=>{
+    const prevByVid=new Map();
+    prev.forEach(p=>{if(p.vid)prevByVid.set(p.vid,p)});
+    return vD.map((v,i)=>{
+      const vid=String(F(v,"VO_ID")||"");
+      const newRow={i,_r:v._row!==undefined?v._row:i,vid,pj:String(F(v,"PROJECT","Project")).trim(),area:String(F(v,"AREA ON JOB","")||""),ty:String(F(v,"TYPE","Type")),vn:String(F(v,"VARIATION NO.")),srn:String(F(v,"SUB REF NO.","Sub Ref No.")||""),vnm:String(F(v,"VARIATION NAME")),ds:fmD(String(F(v,"DATE SUBMITTED"))),da:fmD(String(F(v,"DATE APPROVED"))),pr:N(F(v,"PRICE","REVENUE")),claim:String(F(v,"CLAIM %","")||""),st:String(F(v,"STATUS","Status")),em:N(F(v,"EXTERNAL MATERIALS")),pf:N(F(v,"PFAB MATERIALS")),nmn:N(F(v,"NO. OF MEN")),nh:N(F(v,"NORMAL HOURS")),nr:N(F(v,"NORMAL RATE")),oh:N(F(v,"OVERTIME HOURS")),or2:N(F(v,"OVERTIME RATE")),notes:String(F(v,"NOTES","Notes")||""),creator:String(F(v,"CREATOR")||""),pushedAt:String(F(v,"PUSHED AT")||""),pushedBy:String(F(v,"PUSHED BY")||""),eb:String(F(v,"EditedBy","EDITED BY")||""),ea:String(F(v,"EditedAt","EDITED AT")||"")};
+      // Reuse prev row's object identity if every field matches — keeps React.memo'd VORow from re-rendering unchanged rows
+      const prevRow=prevByVid.get(vid);
+      if(prevRow){let same=true;for(const k in newRow){if(newRow[k]!==prevRow[k]){same=false;break}}if(same)return prevRow}
+      return newRow;
+    });
+  });
   sLd(false)},[]);
  
 useEffect(()=>{if(un)load()},[un,load]);
@@ -697,7 +708,7 @@ useEffect(()=>{if(!un||!pp)return;
         load(true);
         if(vwRef.current==="coord"&&coordUserRef.current)loadCoordVO(coordUserRef.current);
       });
-    },300);
+    },600);
   };
   const ch=sb.channel("app-changes")
     .on("postgres_changes",{event:"*",schema:"public",table:"variations"},triggerReload)
@@ -831,7 +842,7 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
 {flt.map(p=>{
 const open=exp[p.nm];
 const gpM=m=>gv(p.nm,m,"Sales")-gv(p.nm,m,"ExtMaterials")-gv(p.nm,m,"ProfabMaterials")-gv(p.nm,m,"OtherCosts");
-return<div className="pg" key={p.i}>
+return<div className="pg" key={p.nm}>
 {/* Project row = Sales (Status+JobID inside first cell) */}
 <div className="pr">
 <div className={hovOn&&hovR===p.nm?"rh":""} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)} style={{display:"flex",flexDirection:"column",gap:1,width:"100%"}}>
@@ -941,7 +952,7 @@ return<div className="cds">
 {vis.map(m=><div key={m} className={(selM.includes(m)?"ms":"")+" "+(m===CUR_M?"cur-month":"")} onClick={()=>togM(m)} style={{textAlign:"center",color:"var(--tx)"}}>{m}</div>)}</div>
 {(()=>{let pfs=comp.filter(p=>{const pfCon=gv(p.nm,"_BC","ProfabMaterials");const pfVar=gv(p.nm,"_BV","ProfabMaterials");const pfVO=voPfab[nk(p.nm)]||0;return(pfCon+pfVar+pfVO+p.pT)>0});if(pfStFilt.length>0)pfs=pfs.filter(p=>pfStFilt.includes(p.st));if(pfSr_d)pfs=pfs.filter(p=>p.nm.toLowerCase().includes(pfSr_d.toLowerCase()));return pfs.map(p=>{
 const pfCon=gv(p.nm,"_BC","ProfabMaterials");const pfVar=gv(p.nm,"_BV","ProfabMaterials");const pfVO=voPfab[nk(p.nm)]||0;const pfTot=pfCon+pfVar+pfVO;const pfAlloc=p.pT;const pfTba=pfTot-pfAlloc;
-return<div className="pr pr-pf" key={p.i}>
+return<div className="pr pr-pf" key={p.nm}>
 <div style={{textAlign:"left",position:"sticky",left:0,zIndex:3,background:"#fff",fontFamily:"var(--ft)",color:"var(--ac)",fontSize:9,fontWeight:700,padding:"4px 6px",display:"flex",alignItems:"center",gap:4}} className={hovOn&&hovR===p.nm?"rh":""} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)}><span className={"st-tag "+(p.st==="Live"?"st-live":p.st==="Pending"?"st-pend":p.st==="Awarded"?"st-awd":"st-done")} style={{fontSize:7}}>{p.st==="Live"?"LIVE":p.st==="Pending"?"PEND":p.st==="Awarded"?"AWRD":"DONE"}</span>{p.nm}</div>
 <div style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px"}} className={hovOn&&hovR===p.nm?"rh":""} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)}>{pfCon?fm(pfCon):""}</div>
 <div style={{fontFamily:"var(--mn)",fontSize:9,textAlign:"right",padding:"4px 6px"}} className={hovOn&&hovR===p.nm?"rh":""} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)}>{pfVar?fm(pfVar):""}</div>
@@ -992,7 +1003,7 @@ return<div className="pr pr-pf" key={p.i}>
 <span style={{fontSize:10,color:"var(--t2)"}}>{vo.length} · Approved: {fK(Object.values(voP).reduce((s,v)=>s+v,0))}</span>
 </div></div>
 <div style={{padding:"6px 10px",display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",borderBottom:"1px solid var(--bd)"}}>
-{voView!=="project"&&<input value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder={voView==="home"?"Search project...":"Search..."} style={{padding:"3px 8px",border:"1px solid var(--bd)",borderRadius:4,fontSize:10,outline:"none",width:160,fontFamily:"var(--ft)",background:"var(--bg)",color:"var(--tx)"}}/>}
+<input className="sx" value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder="Search project or variation name"/>
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setVoFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:voFiltTy===t?"var(--ac)":"var(--bd)",background:voFiltTy===t?"var(--ac)":"transparent",color:voFiltTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
 <div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=masterStCnt[s.v]||0;const isActive=voView==="status"?selectedVoStatus===s.v:voFiltSt.includes(s.v);const isDisabled=voView==="status"&&selectedVoStatus!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedVoStatus(s.v)}else if(voView==="project"){setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 <span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(masterFilteredCards.length+" projects · "+vo.length+" VOs"):(voFilt.length+" of "+vo.length)}</span>
@@ -1070,7 +1081,7 @@ return<div className="pr pr-pf" key={p.i}>
 {voView==="status"&&<span className="detail-title">All VOs marked <b>{selectedVoStatus==="(blank)"?"No Status":selectedVoStatus}</b></span>}
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setVoFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:voFiltTy===t?"var(--ac)":"var(--bd)",background:voFiltTy===t?"var(--ac)":"transparent",color:voFiltTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
 <div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=coordStCnt[s.v]||0;const isActive=voView==="status"?selectedVoStatus===s.v:voFiltSt.includes(s.v);const isDisabled=voView==="status"&&selectedVoStatus!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedVoStatus(s.v)}else if(voView==="project"){setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
-{voView!=="project"&&<input className="sx" value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder={voView==="home"?"Search project...":"Search..."}/>}
+<input className="sx" value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder="Search project or variation name"/>
 <span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(coordFilteredCards.length+" projects · "+coordVO.length+" VOs · Read only"):(coordFilt.length+" of "+coordVO.length+" · Read only · Approved: "+coordVO.filter(v=>{const u=String(v.st).toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")}).length)}</span>
 </div>
 {voView==="home"?<div className="pj-grid">
