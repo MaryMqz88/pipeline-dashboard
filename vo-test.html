@@ -130,12 +130,14 @@ function EC({value,onChange,cls,style,fmt}){const[e,sE]=useState(false);const[d,
 if(e)return<input ref={r} autoFocus type="text" value={d} onChange={ev=>{sD(ev.target.value)}} onBlur={()=>{const v=parseFloat(d.replace(/[$,]/g,""))||0;onChange(v);sE(false)}} onKeyDown={ev=>{if(ev.key==="Enter"){const v=parseFloat(d.replace(/[$,]/g,""))||0;onChange(v);sE(false)}if(ev.key==="Escape")sE(false)}} style={{width:"100%",textAlign:"right",...(style||{})}}/>;
 return<div className={cls||"cl"} style={{textAlign:"right",fontFamily:"var(--mn)",cursor:"pointer",padding:"2px 4px",...(style||{})}} onDoubleClick={()=>{sD(value?String(value):"");sE(true)}}>{value?(fmt?fmt(value):String(value)):""}</div>}
 
-function DebInput({value,onSave,style,list,placeholder,format,maxLen}){const[v,sV]=useState(value||"");const tR=useRef();const lastSavedRef=useRef(value||"");
-useEffect(()=>{const cur=value==null?"":String(value);if(cur!==lastSavedRef.current){sV(cur);lastSavedRef.current=cur}},[value]);
-const fire=val=>{if(val!==lastSavedRef.current){lastSavedRef.current=val;onSave(val)}};
+function DebInput({value,onSave,style,list,placeholder,format,maxLen}){const[v,sV]=useState(value||"");const[focused,setFocused]=useState(false);const lastSavedRef=useRef(value||"");
+useEffect(()=>{if(focused)return;const cur=value==null?"":String(value);if(cur!==lastSavedRef.current){sV(cur);lastSavedRef.current=cur}},[value,focused]);
+const fire=val=>{const final=format?format(val):val;if(final!==lastSavedRef.current){lastSavedRef.current=final;if(final!==val)sV(final);onSave(final)}};
 return<input list={list} value={v} placeholder={placeholder} style={style}
-onChange={e=>{let nv=e.target.value;if(maxLen&&nv.length>maxLen)nv=nv.substring(0,maxLen);sV(nv);clearTimeout(tR.current);tR.current=setTimeout(()=>fire(nv),500)}}
-onBlur={()=>{clearTimeout(tR.current);if(format){const f=format(v);if(f!==v){sV(f);fire(f);return}}fire(v)}}/>}
+onChange={e=>{let nv=e.target.value;if(maxLen&&nv.length>maxLen)nv=nv.substring(0,maxLen);sV(nv)}}
+onFocus={()=>setFocused(true)}
+onBlur={()=>{setFocused(false);fire(v)}}
+onKeyDown={e=>{if(e.key==="Enter"){fire(v);e.target.blur()}}}/>}
 
 function App(){
 const wqRef=useRef(Promise.resolve());
@@ -154,9 +156,6 @@ const[vo,sVo]=useState([]);
 const[pj,sPj]=useState([]);
 const[ld,sLd]=useState(true);
 const[sv,sSv]=useState(false);
-const svRef=useRef(false);useEffect(()=>{svRef.current=sv},[sv]);
-const editingRef=useRef(0);
-const markEdit=()=>{editingRef.current=Date.now()};
 const[er,sEr]=useState(null);
 const[sa,sSa]=useState(false);
 const[adding,setAdding]=useState(false);
@@ -183,7 +182,18 @@ const load=useCallback(async(silent)=>{if(!silent)sLd(true);sEr(null);try{const 
 const vD=d.variations||d.vos||[];
 // Project list comes from a separate getAll call so the +Add picker has all options.
 let pD=[];try{const r2=await fetch(API+"?action=getAll"+(pp?"&passphrase="+encodeURIComponent(pp):""));const d2=await r2.json();if(d2&&!d2.error)pD=d2.projects||[]}catch{}
-sPj(pD.map(p=>({nm:String(F(p,"Project","PROJECT")).trim()})).filter(p=>!p.nm.startsWith("_")));
+// Filter projects to those assigned to the current coord (or "all"). Hides system projects starting with _.
+const isCoordAssigned=(coordField,coord)=>{
+  if(!coordField)return false;
+  const t=String(coordField).trim().toLowerCase();
+  if(!t)return false;
+  if(t==="all")return true;
+  return t.split(",").map(s=>s.trim()).includes(coord.toLowerCase());
+};
+sPj(pD
+  .map(p=>({nm:String(F(p,"Project","PROJECT")).trim(),coord:String(F(p,"COORDINATOR")||"")}))
+  .filter(p=>!p.nm.startsWith("_"))
+  .filter(p=>isCoordAssigned(p.coord,user)));
 sVo(vD.map((v,i)=>({i,_r:v._row!==undefined?v._row:i,
 vid:String(F(v,"VO_ID")||""),
 pj:String(F(v,"PROJECT","Project")).trim(),
@@ -221,12 +231,7 @@ useEffect(()=>{if(!user||!pp)return;
   if(SUPABASE_ANON_KEY==="PASTE_ANON_KEY_HERE"){console.warn("Realtime disabled: SUPABASE_ANON_KEY not set");return}
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   let dt=null;
-  const triggerReload=()=>{
-    if(dt)clearTimeout(dt);
-    const sinceEdit=Date.now()-editingRef.current;
-    if(svRef.current||sinceEdit<1500){dt=setTimeout(triggerReload,800);return}
-    dt=setTimeout(()=>load(true),300);
-  };
+  const triggerReload=()=>{if(dt)clearTimeout(dt);dt=setTimeout(()=>load(true),300)};
   const ch=sb.channel("vo-changes")
     .on("postgres_changes",{event:"*",schema:"public",table:"variations"},triggerReload)
     .on("postgres_changes",{event:"*",schema:"public",table:"projects"},triggerReload)
@@ -240,7 +245,7 @@ useEffect(()=>{if(!actOpen)return;let cancelled=false;const refresh=async()=>{tr
 const tAgo=(ts)=>{if(!ts)return"";const d=Date.now()-new Date(ts).getTime();if(d<60000)return"just now";if(d<3600000)return Math.floor(d/60000)+" min ago";if(d<86400000)return Math.floor(d/3600000)+"h ago";return Math.floor(d/86400000)+"d ago"};
 
 const calcDLPrice=(v,fd,val)=>{const u={...v,[fd]:val};const m=N(u.nmn)||1;return(m*N(u.nh)*N(u.nr))+(m*N(u.oh)*N(u.or2))};
-const uV=useCallback(async(vi,fd,val)=>{markEdit();const v=vo[vi];if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
+const uV=useCallback(async(vi,fd,val)=>{const v=vo[vi];if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
 // Status revert warning: changing FROM Fully/Partially Claimed
 if(fd==="st"){const oldStL=String(v.st||"").toLowerCase();if((oldStL.includes("fully claimed")||oldStL.includes("partially claimed"))&&val!==v.st){if(!confirm("⚠️ Please double check.\n\nThis VO is currently marked \""+v.st+"\". Are you sure you want to change it to \""+val+"\"?\n\nReverting a claimed status can affect the audit trail."))return}}
 const autoP=v.ty==="DL"&&["nmn","nh","nr","oh","or2"].includes(fd);const newPr=autoP?calcDLPrice(v,fd,val):null;sVo(pr=>pr.map((x,i)=>i===vi?{...x,[fd]:val,...(autoP?{pr:newPr}:{}),ea:new Date().toISOString()}:x));
