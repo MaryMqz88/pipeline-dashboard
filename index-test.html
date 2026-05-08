@@ -390,6 +390,23 @@ const SKIP_PJ=/^(extra\s*sales|day\s*lab[ou]r)$/i;
 const isRealProject=nm=>nm&&!nm.startsWith("_")&&!SKIP_PJ.test(nm);
 // Top-stripe color for project cards by status
 const stripeColor=st=>st==="Pending"?"#d9534f":st==="Awarded"?"#3a8dde":st==="Live"?"#1a9a6b":st==="Completed"?"#9ca3af":"#cbd5e1";
+// Map header label → row field for sorting/hiding. Null = not sortable.
+const COL_FIELD={"":null,"Project":"pj","Area on Job":"area","Type":"ty","Var No.":"vn","Sub Ref No.":"srn","Name":"vnm","Date Sub.":"ds","Date Appr.":"da","Price":"pr","Claim %":"claim","Status":"st","Ext.Mat":"em","PFAB":"pf","Margin":null,"#Men":"nmn","NHrs":"nh","NRate":"nr","OTHrs":"oh","OTRate":"or2","Notes":"notes","Push":null,"☐":null};
+const HIDEABLE_COLS=new Set(["Area on Job","Claim %"]);
+// Status priority: claimed>partial>accepted>priced>rejected>blank
+const ST_ORDER=["fully claimed","partially claimed","accepted","priced","rejected"];
+const stPri=v=>{const s=String(v||"").toLowerCase();const i=ST_ORDER.findIndex(o=>s.includes(o));return i===-1?99:i};
+const cmp=(a,b,col,dir)=>{
+  let av=a[col],bv=b[col];
+  const ae=av==null||av==="",be=bv==null||bv==="";
+  if(ae&&!be)return 1;if(!ae&&be)return -1;if(ae&&be)return 0;
+  let r;
+  if(col==="ds"||col==="da"){r=(dsToTs(av)||0)-(dsToTs(bv)||0)}
+  else if(col==="st"){r=stPri(av)-stPri(bv)}
+  else if(typeof av==="number"||(!isNaN(parseFloat(av))&&typeof av!=="boolean"&&col!=="vn"&&col!=="srn")){r=(parseFloat(av)||0)-(parseFloat(bv)||0)}
+  else{r=String(av).toLowerCase().localeCompare(String(bv).toLowerCase())}
+  return dir==="desc"?-r:r;
+};
 const voRowColor=st=>{const s=String(st||"").toLowerCase();if(s.includes("fully claimed"))return"#1a9a6b";if(s.includes("partially"))return"#c45e10";if(s.includes("accepted"))return"#7c3aed";if(s.includes("rejected"))return"#b5b5b5";return"var(--tx)"};
 const isAp=s=>{const u=String(s||"").toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")};
 const isPn=s=>{const u=String(s||"").toUpperCase();return u.includes("PENDING")||u.includes("PRICED")};
@@ -471,20 +488,24 @@ return<div className="notes-modal" onClick={onCancel}>
 </div></div></div>});
  
 const VORow=React.memo(function VORow({v,colW,uV,dVO,onOpenNote}){
+const VORow=React.memo(function VORow({v,colW,uV,dVO,onOpenNote,hideCols}){
 const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="#fff";
 const ro={color:rc,padding:"2px 4px",cursor:"default",userSelect:"text"};
+const hA=hideCols&&hideCols.has("Area on Job"),hC=hideCols&&hideCols.has("Claim %");
+// Effective widths for sticky math: hidden columns contribute 0
+const w=(i)=>(i===2&&hA)?0:colW[i];
 return<tr style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving... please wait before editing":editTip(v.eb,v.ea)}>
 <td style={{textAlign:"center",padding:0,width:24,position:"sticky",left:0,zIndex:2,background:bg}} title={"Created by "+(v.creator||"?")+(v.pushedAt?" · Pushed by "+(v.pushedBy||"?")+" on "+fmEdAt(v.pushedAt):" (not pushed)")+(v.eb?" · Last edited by "+v.eb+(v.ea?" on "+fmEdAt(v.ea):""):"")}><span style={{fontSize:9,color:"var(--t2)",fontWeight:700}}>{(v.pushedBy||v.creator||"?").substring(0,1).toUpperCase()}</span></td>
-<td style={{position:"sticky",left:colW[0],zIndex:2,background:bg,...ro}}>{v.pj}</td>
-<td style={{position:"sticky",left:colW[0]+colW[1],zIndex:2,background:bg,...ro}}>{v.area||""}</td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2],zIndex:2,background:bg,...ro}}>{v.ty}</td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3],zIndex:2,background:bg,...ro}}>{v.vn}</td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3]+colW[4],zIndex:2,background:bg,...ro}}>{v.srn||""}</td>
-<td style={{position:"sticky",left:colW[0]+colW[1]+colW[2]+colW[3]+colW[4]+colW[5],zIndex:2,borderRight:"2px solid var(--bd)",background:bg,...ro}}>{v.vnm}</td>
+<td style={{position:"sticky",left:w(0),zIndex:2,background:bg,...ro}}>{v.pj}</td>
+{!hA&&<td style={{position:"sticky",left:w(0)+w(1),zIndex:2,background:bg,...ro}}>{v.area||""}</td>}
+<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg,...ro}}>{v.ty}</td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3),zIndex:2,background:bg,...ro}}>{v.vn}</td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4),zIndex:2,background:bg,...ro}}>{v.srn||""}</td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5),zIndex:2,borderRight:"2px solid var(--bd)",background:bg,...ro}}>{v.vnm}</td>
 <td style={ro}>{v.ds||""}</td>
 <td style={ro}>{v.da||""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pr?fmP(v.pr):""}</td>
-<td style={ro}>{v.claim||""}</td>
+{!hC&&<td style={ro}>{v.claim||""}</td>}
 <td><select value={v.st} onChange={e=>uV(v.i,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:9,fontWeight:600,width:"100%",cursor:"pointer"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.em?fmP(v.em):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pf?fmP(v.pf):""}</td>
@@ -497,21 +518,23 @@ return<tr style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving
 <td style={{textAlign:"center",cursor:"default"}} title={v.notes||""}>{v.notes?<span style={{fontSize:14}}>💬</span>:<span style={{color:"var(--t2)",fontSize:12}}>—</span>}</td>
 </tr>});
  
-const CoordRow=React.memo(function CoordRow({v,vi,coordColW,onOpenNote}){
+const CoordRow=React.memo(function CoordRow({v,vi,coordColW,onOpenNote,hideCols}){
 const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg=vi%2===1?"#f8f9fb":"#fff";
 const ro={color:rc,padding:"2px 4px",cursor:"default"};
+const hA=hideCols&&hideCols.has("Area on Job"),hC=hideCols&&hideCols.has("Claim %");
+const w=(i)=>(i===2&&hA)?0:coordColW[i];
 return<tr style={{color:rc,opacity:v._pending?0.55:1}} title={editTip(v.eb,v.ea)}>
 <td style={{textAlign:"center",padding:0,position:"sticky",left:0,zIndex:2,background:bg}} title={"Created by "+(v.creator||"?")+(v.pushedAt?" · Pushed by "+(v.pushedBy||"?")+" on "+fmEdAt(v.pushedAt):" (not pushed)")}><span style={{fontSize:9,color:"var(--t2)",fontWeight:700}}>{(v.creator||v.pushedBy||"?").substring(0,1).toUpperCase()}</span></td>
-<td style={{position:"sticky",left:coordColW[0],zIndex:2,background:bg,...ro}}>{v.pj}</td>
-<td style={{position:"sticky",left:coordColW[0]+coordColW[1],zIndex:2,background:bg,...ro}}>{v.area||""}</td>
-<td style={{position:"sticky",left:coordColW[0]+coordColW[1]+coordColW[2],zIndex:2,background:bg,...ro}}>{v.ty}</td>
-<td style={{position:"sticky",left:coordColW[0]+coordColW[1]+coordColW[2]+coordColW[3],zIndex:2,background:bg,...ro}}>{v.vn}</td>
-<td style={{position:"sticky",left:coordColW[0]+coordColW[1]+coordColW[2]+coordColW[3]+coordColW[4],zIndex:2,background:bg,...ro}}>{v.srn||""}</td>
-<td style={{position:"sticky",left:coordColW[0]+coordColW[1]+coordColW[2]+coordColW[3]+coordColW[4]+coordColW[5],zIndex:2,background:bg,borderRight:"2px solid var(--bd)",...ro}}>{v.vnm}</td>
+<td style={{position:"sticky",left:w(0),zIndex:2,background:bg,...ro}}>{v.pj}</td>
+{!hA&&<td style={{position:"sticky",left:w(0)+w(1),zIndex:2,background:bg,...ro}}>{v.area||""}</td>}
+<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg,...ro}}>{v.ty}</td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3),zIndex:2,background:bg,...ro}}>{v.vn}</td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4),zIndex:2,background:bg,...ro}}>{v.srn||""}</td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5),zIndex:2,background:bg,borderRight:"2px solid var(--bd)",...ro}}>{v.vnm}</td>
 <td style={ro}>{v.ds||""}</td>
 <td style={ro}>{v.da||""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pr?fmP(v.pr):""}</td>
-<td style={ro}>{v.claim||""}</td>
+{!hC&&<td style={ro}>{v.claim||""}</td>}
 <td style={{fontWeight:600,...ro}}>{v.st}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.em?fmP(v.em):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pf?fmP(v.pf):""}</td>
@@ -554,6 +577,18 @@ const setCC=(p,m,col,color)=>{const k=nk(p)+"|||"+m+"|||"+col;setCellColors(prev
 const getCC=(p,m,col)=>cellColors[nk(p)+"|||"+m+"|||"+col]||"default";
 const[colorMenu,setColorMenu]=useState(null);
 const openCM=(e,p,m,col)=>{e.preventDefault();setColorMenu({x:e.clientX,y:e.clientY,p,m,col})};const[hovR,sHR]=useState(null);const[hovC,sHC]=useState(null);const[hovOn,setHovOn]=useState(true);const[selCells,setSelCells]=useState([]);
+// Sort state per register (col=field, dir="asc"|"desc"|null)
+const[voSortCol,setVoSortCol]=useState(null);const[voSortDir,setVoSortDir]=useState(null);
+const[coordSortCol,setCoordSortCol]=useState(null);const[coordSortDir,setCoordSortDir]=useState(null);
+// Hide columns state per register, persisted to localStorage
+const[voHideCols,setVoHideCols]=useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("voreg-hide-master")||"[]"))}catch{return new Set()}});
+const[coordHideCols,setCoordHideCols]=useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("voreg-hide-coord-ro")||"[]"))}catch{return new Set()}});
+useEffect(()=>{try{localStorage.setItem("voreg-hide-master",JSON.stringify(Array.from(voHideCols)))}catch{}},[voHideCols]);
+useEffect(()=>{try{localStorage.setItem("voreg-hide-coord-ro",JSON.stringify(Array.from(coordHideCols)))}catch{}},[coordHideCols]);
+// Cycle through sort: clicking a header → asc → desc → cleared
+const cycleSort=(setCol,setDir,curCol,curDir,colKey)=>{if(!colKey)return;if(curCol!==colKey){setCol(colKey);setDir("asc")}else if(curDir==="asc"){setDir("desc")}else{setCol(null);setDir(null)}};
+// Toggle a column's hidden state. If currently sorted by it, also clear the sort.
+const toggleHide=(setHide,hideSet,curSortCol,setSortCol,setSortDir,label)=>{const newSet=new Set(hideSet);if(newSet.has(label))newSet.delete(label);else{newSet.add(label);if(curSortCol===COL_FIELD[label]){setSortCol(null);setSortDir(null)}}setHide(newSet)};
  
 const handleCellClick=(val,e)=>{if(!val&&val!==0)return;const v=Number(val);if(isNaN(v))return;if(e.ctrlKey||e.metaKey){setSelCells(prev=>[...prev,v])}else{setSelCells([v])}};
 const clearSel=()=>setSelCells([]);
@@ -605,8 +640,11 @@ const voFilt=useMemo(()=>{
   }
   if(voFiltTy_d!=="all")f=f.filter(v=>v.ty===voFiltTy_d);
   if(voFiltSt_d.length>0)f=f.filter(v=>voFiltSt_d.some(s=>matchStatus(v.st,s)));
-  return f.slice().sort((a,b)=>{const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad})
-},[vo,voView,selectedVoProject,selectedVoStatus,voFiltPj_d,voFiltTy_d,voFiltSt_d]);
+  return f.slice().sort((a,b)=>{
+    if(voSortCol)return cmp(a,b,voSortCol,voSortDir||"asc");
+    const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad
+  })
+},[vo,voView,selectedVoProject,selectedVoStatus,voFiltPj_d,voFiltTy_d,voFiltSt_d,voSortCol,voSortDir]);
 
 const coordFilt=useMemo(()=>{
   let f=coordVO.filter(v=>isRealProject(v.pj));
@@ -619,8 +657,11 @@ const coordFilt=useMemo(()=>{
   }
   if(voFiltTy_d!=="all")f=f.filter(v=>v.ty===voFiltTy_d);
   if(voFiltSt_d.length>0)f=f.filter(v=>voFiltSt_d.some(s=>matchStatus(v.st,s)));
-  return f.slice().sort((a,b)=>{const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad})
-},[coordVO,voView,selectedVoProject,selectedVoStatus,voFiltPj_d,voFiltTy_d,voFiltSt_d]);
+  return f.slice().sort((a,b)=>{
+    if(coordSortCol)return cmp(a,b,coordSortCol,coordSortDir||"asc");
+    const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad
+  })
+},[coordVO,voView,selectedVoProject,selectedVoStatus,voFiltPj_d,voFiltTy_d,voFiltSt_d,coordSortCol,coordSortDir]);
 
 // Project cards data: grouped by project, alphabetical, with per-status counts.
 // Only includes projects that have at least one VO. Excludes system projects (_) and pipeline categories.
@@ -1010,6 +1051,8 @@ return<div className="pr pr-pf" key={p.nm}>
 <input className="sx" value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder="Search project or variation name"/>
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setVoFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:voFiltTy===t?"var(--ac)":"var(--bd)",background:voFiltTy===t?"var(--ac)":"transparent",color:voFiltTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
 <div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=masterStCnt[s.v]||0;const isActive=voView==="status"?selectedVoStatus===s.v:voFiltSt.includes(s.v);const isDisabled=voView==="status"&&selectedVoStatus!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedVoStatus(s.v)}else if(voView==="project"){setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
+{Array.from(HIDEABLE_COLS).map(label=><label key={label} style={{display:"flex",alignItems:"center",gap:3,fontSize:9,color:"var(--t2)",cursor:"pointer",userSelect:"none"}}><input type="checkbox" checked={!voHideCols.has(label)} onChange={()=>toggleHide(setVoHideCols,voHideCols,voSortCol,setVoSortCol,setVoSortDir,label)} style={{cursor:"pointer"}}/>{label}</label>)}
+{voSortCol&&<span style={{fontSize:9,padding:"2px 6px",border:"1px solid var(--ac)",borderRadius:10,background:"var(--ac)",color:"#fff",display:"flex",gap:4,alignItems:"center",cursor:"pointer"}} onClick={()=>{setVoSortCol(null);setVoSortDir(null)}} title="Click to clear sort">Sort: {Object.keys(COL_FIELD).find(k=>COL_FIELD[k]===voSortCol)||voSortCol} {voSortDir==="desc"?"▼":"▲"} ✕</span>}
 <span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(masterFilteredCards.length+" projects · "+vo.length+" VOs"):(voFilt.length+" of "+vo.length)}</span>
 </div>
 {voView==="home"?<div className="pj-grid">
@@ -1019,9 +1062,9 @@ return<div className="pr pr-pf" key={p.nm}>
 <div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 </div>)}
 </div>:voFilt.length===0?<div className="em">No entries match filter.</div>:
-<div className="vsc-fx"><table className="vt" style={{width:colW.reduce((a,b)=>a+b,0)+"px",minWidth:colW.reduce((a,b)=>a+b,0)+"px"}}><colgroup>{colW.map((w,i)=><col key={i} style={{width:w+"px"}}/>)}</colgroup><thead><tr>
-{["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes"].map((h,ci)=><th key={h} className={ci===0?"":ci<11?"tg":ci<14?"ty":ci<19?"tp":"tg"} style={{width:colW[ci],minWidth:40,...(ci<7?{position:"sticky",left:colW.slice(0,ci).reduce((a,b)=>a+b,0),zIndex:5,background:ci<11?"#eef9f3":ci<14?"#fdf3e9":ci<19?"#f3eefb":"#eef9f3"}:{}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}<div className="col-resize" onMouseDown={e=>startResize(ci,e)}/></th>)}
-</tr></thead><tbody>{voFilt.map(v=><VORow key={v.i} v={v} colW={colW} uV={uV} dVO={dVO} onOpenNote={setNoteEdit}/>)}</tbody></table></div>}
+<div className="vsc-fx"><table className="vt" style={{width:colW.reduce((a,b,i)=>a+(voHideCols.has(["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes"][i])?0:b),0)+"px"}}><colgroup>{colW.map((w,i)=><col key={i} style={{width:(voHideCols.has(["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes"][i])?0:w)+"px"}}/>)}</colgroup><thead><tr>
+{(()=>{const headers=["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes"];const eW=(i)=>voHideCols.has(headers[i])?0:colW[i];return headers.map((h,ci)=>{if(voHideCols.has(h))return null;const fld=COL_FIELD[h];const isSorted=fld&&voSortCol===fld;const arrow=isSorted?(voSortDir==="asc"?" ▲":" ▼"):"";return<th key={h} className={ci===0?"":ci<11?"tg":ci<14?"ty":ci<19?"tp":"tg"} onClick={()=>cycleSort(setVoSortCol,setVoSortDir,voSortCol,voSortDir,fld)} style={{width:eW(ci),minWidth:40,cursor:fld?"pointer":"default",userSelect:"none",...(ci<7?{position:"sticky",left:Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0),zIndex:5,background:ci<11?"#eef9f3":ci<14?"#fdf3e9":ci<19?"#f3eefb":"#eef9f3"}:{}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}{arrow}<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/></th>})})()}
+</tr></thead><tbody>{voFilt.map(v=><VORow key={v.i} v={v} colW={colW} uV={uV} dVO={dVO} onOpenNote={setNoteEdit} hideCols={voHideCols}/>)}</tbody></table></div>}
 </div>}
 
 {/* PROJECT SETTINGS */}
@@ -1086,6 +1129,8 @@ return<div className="pr pr-pf" key={p.nm}>
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setVoFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:voFiltTy===t?"var(--ac)":"var(--bd)",background:voFiltTy===t?"var(--ac)":"transparent",color:voFiltTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
 <div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=coordStCnt[s.v]||0;const isActive=voView==="status"?selectedVoStatus===s.v:voFiltSt.includes(s.v);const isDisabled=voView==="status"&&selectedVoStatus!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedVoStatus(s.v)}else if(voView==="project"){setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 <input className="sx" value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder="Search project or variation name"/>
+{Array.from(HIDEABLE_COLS).map(label=><label key={label} style={{display:"flex",alignItems:"center",gap:3,fontSize:9,color:"var(--t2)",cursor:"pointer",userSelect:"none"}}><input type="checkbox" checked={!coordHideCols.has(label)} onChange={()=>toggleHide(setCoordHideCols,coordHideCols,coordSortCol,setCoordSortCol,setCoordSortDir,label)} style={{cursor:"pointer"}}/>{label}</label>)}
+{coordSortCol&&<span style={{fontSize:9,padding:"2px 6px",border:"1px solid var(--ac)",borderRadius:10,background:"var(--ac)",color:"#fff",display:"flex",gap:4,alignItems:"center",cursor:"pointer"}} onClick={()=>{setCoordSortCol(null);setCoordSortDir(null)}} title="Click to clear sort">Sort: {Object.keys(COL_FIELD).find(k=>COL_FIELD[k]===coordSortCol)||coordSortCol} {coordSortDir==="desc"?"▼":"▲"} ✕</span>}
 <span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(coordFilteredCards.length+" projects · "+coordVO.length+" VOs · Read only"):(coordFilt.length+" of "+coordVO.length+" · Read only · Approved: $"+coordFilt.filter(v=>{const u=String(v.st).toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")}).reduce((s,v)=>s+(Number(v.pr)||0),0).toLocaleString("en-AU",{maximumFractionDigits:0}))}</span>
 </div>
 {voView==="home"?<div className="pj-grid">
@@ -1095,10 +1140,10 @@ return<div className="pr pr-pf" key={p.nm}>
 <div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 </div>)}
 </div>:<div className="vsc-fx"><table className="vt" style={{width:coordColW.reduce((a,b)=>a+b,0)+"px",minWidth:coordColW.reduce((a,b)=>a+b,0)+"px"}}><colgroup>{coordColW.map((w,i)=><col key={i} style={{width:w+"px"}}/>)}</colgroup><thead><tr>
-{["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"].map((h,ci)=><th key={h+"_"+ci} className={ci===0?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} style={{width:coordColW[ci],minWidth:30,...(ci<7?{position:"sticky",left:coordColW.slice(0,ci).reduce((a,b)=>a+b,0),top:0,zIndex:5,background:ci===0?"#fff":"#eef9f3"}:{top:0,position:"sticky",zIndex:3,background:ci<12?"#eef9f3":ci<15?"#fdf3e9":ci<20?"#f3eefb":"#eef9f3"}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}{ci>0&&<div className="col-resize" onMouseDown={e=>startCoordResize(ci,e)}/>}</th>)}
+{(()=>{const headers=["","Project","Area on Job","Type","Var No.","Sub Ref No.","Name","Date Sub.","Date Appr.","Price","Claim %","Status","Ext.Mat","PFAB","Margin","#Men","NHrs","NRate","OTHrs","OTRate","Notes","Push"];const eW=(i)=>coordHideCols.has(headers[i])?0:coordColW[i];return headers.map((h,ci)=>{if(coordHideCols.has(h))return null;const fld=COL_FIELD[h];const isSorted=fld&&coordSortCol===fld;const arrow=isSorted?(coordSortDir==="asc"?" ▲":" ▼"):"";return<th key={h+"_"+ci} className={ci===0?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} onClick={()=>cycleSort(setCoordSortCol,setCoordSortDir,coordSortCol,coordSortDir,fld)} style={{width:eW(ci),minWidth:30,cursor:fld?"pointer":"default",userSelect:"none",...(ci<7?{position:"sticky",left:Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0),top:0,zIndex:5,background:ci===0?"#fff":"#eef9f3"}:{top:0,position:"sticky",zIndex:3,background:ci<12?"#eef9f3":ci<15?"#fdf3e9":ci<20?"#f3eefb":"#eef9f3"}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}{arrow}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startCoordResize(ci,e)}}/>}</th>})})()}
 </tr></thead><tbody>
 {coordFilt.length===0?<tr><td colSpan={22} style={{textAlign:"center",padding:20,color:"var(--t2)"}}>No entries match filter.</td></tr>:
-coordFilt.map((v,vi)=><CoordRow key={vi} v={v} vi={vi} coordColW={coordColW} onOpenNote={setCoordNoteView}/>)}
+coordFilt.map((v,vi)=><CoordRow key={vi} v={v} vi={vi} coordColW={coordColW} onOpenNote={setCoordNoteView} hideCols={coordHideCols}/>)}
 </tbody></table></div>}
 </div>}
  
