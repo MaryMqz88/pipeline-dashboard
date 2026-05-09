@@ -6,7 +6,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f4f6f9;--s1:#ffffff;--s2:#edf0f5;--s3:#e2e6ed;--bd:#cdd3de;--tx:#1e2330;--t2:#6b7489;--ac:#4472c4;--a2:#3560b5;--gn:#1a9a6b;--am:#a07008;--rd:#dc4a4a;--pu:#a78bfa;--ft:'Outfit',sans-serif;--mn:'Aptos','Calibri','Segoe UI',sans-serif}
-*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--tx);font-family:var(--ft)}
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}body{background:var(--bg);color:var(--tx);font-family:var(--ft)}
 .np{position:fixed;inset:0;background:#f4f6f9;display:flex;align-items:center;justify-content:center;z-index:100}
 .nc{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:32px;max-width:380px;width:90%;text-align:center}
 .nc h2{font-size:22px;font-weight:800;margin:12px 0 6px}.nc p{font-size:12px;color:var(--t2);margin-bottom:14px}
@@ -14,7 +14,7 @@
 .nin:focus{border-color:var(--ac)}.nin::placeholder{color:#a0a8b8}
 .nbt{width:100%;padding:12px;border-radius:10px;border:none;background:var(--a2);color:#fff;font-family:var(--ft);font-size:14px;font-weight:700;cursor:pointer}
 .nbt:hover:not(:disabled){background:var(--ac)}.nbt:disabled{opacity:.3}
-.app{padding:10px 12px 28px 12px;display:flex;flex-direction:column;min-height:100vh}
+.app{padding:10px 12px 28px 12px;display:flex;flex-direction:column;height:100vh;min-height:0}
 .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:0;flex-wrap:wrap;gap:6px;position:sticky;top:0;z-index:25;background:#f4f6f9;padding:4px 0 10px 0}
 .hl{display:flex;align-items:center;gap:8px}.hl h1{font-size:18px;font-weight:800}
 .dot{width:7px;height:7px;border-radius:50%;animation:pul 2s infinite}@keyframes pul{0%,100%{opacity:1}50%{opacity:.4}}
@@ -108,7 +108,7 @@
 /* VO/Coord flex layout — fills viewport, no grey strip at top or bottom */
 .vw-fx{background:#fff;margin:0 -12px -10px -12px;padding:0;display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
 .vw-fx>*{flex-shrink:0}
-.vw-fx>.vsc-fx{flex:1;min-height:0;overflow:auto;max-height:80vh}
+.vw-fx>.vsc-fx{flex:1;min-height:0;overflow:auto}
 .vw-fx>.em{flex:1;display:flex;align-items:center;justify-content:center}
 .vt{width:100%;border-collapse:separate;border-spacing:0;font-size:9px;font-family:var(--mn);table-layout:fixed}
 .vt th{text-align:center;padding:6px 8px;font-size:9px;color:var(--tx);font-weight:700;border:1px solid var(--bd);background:var(--s2);white-space:nowrap}
@@ -717,7 +717,7 @@ const voFiltSt_d=useDeferredValue(voFiltSt);
 const[voView,setVoView]=useState("home");
 const[selectedVoProject,setSelectedVoProject]=useState(null);
 const[selectedVoStatus,setSelectedVoStatus]=useState(null);
-const goVoHome=()=>{setVoView("home");setSelectedVoProject(null);setSelectedVoStatus(null);setVoFiltSt([]);setVoFiltTy("all")};
+const goVoHome=()=>{setVoView("home");setSelectedVoProject(null);setSelectedVoStatus(null);setVoFiltSt([]);setVoFiltTy("all");setVoFiltPj("")};
 
 const voFilt=useMemo(()=>{
   let f=vo.filter(v=>isRealProject(v.pj));
@@ -1226,16 +1226,16 @@ return<div className="pr pr-pf" key={p.nm}>
 <div style={{padding:"6px 10px",display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",borderBottom:"1px solid var(--bd)"}}>
 <input className="sx" value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder="Search project or variation name"/>
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setVoFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:voFiltTy===t?"var(--ac)":"var(--bd)",background:voFiltTy===t?"var(--ac)":"transparent",color:voFiltTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
-<div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=masterStCnt[s.v]||0;const isActive=voView==="status"?selectedVoStatus===s.v:voFiltSt.includes(s.v);const isDisabled=voView==="status"&&selectedVoStatus!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedVoStatus(s.v)}else if(voView==="project"){setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
+<div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=masterStCnt[s.v]||0;const isActive=voView==="status"?selectedVoStatus===s.v:voFiltSt.includes(s.v);const isDisabled=voView==="status"&&selectedVoStatus!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedVoStatus(s.v);setVoFiltPj("")}else if(voView==="project"){setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 {Array.from(HIDEABLE_COLS).map(label=><label key={label} style={{display:"flex",alignItems:"center",gap:3,fontSize:9,color:"var(--t2)",cursor:"pointer",userSelect:"none"}}><input type="checkbox" checked={!voHideCols.has(label)} onChange={()=>toggleHide(setVoHideCols,voHideCols,voSortCol,setVoSortCol,setVoSortDir,label)} style={{cursor:"pointer"}}/>{label}</label>)}
 {voSortCol&&<span style={{fontSize:9,padding:"2px 6px",border:"1px solid var(--ac)",borderRadius:10,background:"var(--ac)",color:"#fff",display:"flex",gap:4,alignItems:"center",cursor:"pointer"}} onClick={()=>{setVoSortCol(null);setVoSortDir(null)}} title="Click to clear sort">Sort: {Object.keys(COL_FIELD).find(k=>COL_FIELD[k]===voSortCol)||voSortCol} {voSortDir==="desc"?"▼":"▲"} ✕</span>}
 <span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(masterFilteredCards.length+" projects · "+vo.length+" VOs"):(voFilt.length+" of "+vo.length)}</span>
 </div>
 {voView==="home"?<div className="pj-grid">
-{masterFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{vo.length===0?"No variations yet.":"No projects match your search."}</div>:masterFilteredCards.map(c=><div key={c.name} className="pj-card" style={{"--card-accent":stripeColor(c.projectStatus)}} onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all")}}>
+{masterFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{vo.length===0?"No variations yet.":"No projects match your search."}</div>:masterFilteredCards.map(c=><div key={c.name} className="pj-card" style={{"--card-accent":stripeColor(c.projectStatus)}} onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all");setVoFiltPj("")}}>
 <div className="pjnm">{c.name}</div>
 <div className="pjmeta">{c.vos} VO{c.vos!==1?"s":""} · {fK(c.total)}</div>
-<div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
+<div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all");setVoFiltPj("")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 </div>)}
 </div>:voFilt.length===0?<div className="em">No entries match filter.</div>:
 <div className="vsc-fx"><table className="vt" style={{width:VO_HEADERS.reduce((a,h,i)=>a+(voHideCols.has(h)?0:colW[i]),0)+"px"}}><colgroup>{VO_HEADERS.map((h,i)=>voHideCols.has(h)?null:<col key={i} style={{width:colW[i]+"px"}}/>)}</colgroup><thead><tr>
@@ -1286,7 +1286,7 @@ return<div className="pr pr-pf" key={p.nm}>
 <td style={{position:"sticky",left:settingsW[0]+settingsW[1],zIndex:2,background:"#fff",borderRight:"2px solid var(--bd)"}}><JidInput key={"jid_"+(p._v||0)} value={p.jid} onSave={v=>uP(p.nm,"Job ID",v)}/></td>
 <td><select value={p.st} onChange={e=>uP(p.nm,"Status",e.target.value)} style={{background:"transparent",border:"none",fontSize:10,fontWeight:600,width:"100%",cursor:"pointer"}}><option>Pending</option><option>Awarded</option><option>Live</option><option>Completed</option></select></td>
 <td><DebText value={p.client||""} onSave={v=>uP(p.nm,"Client",v)} style={{width:"100%"}}/></td>
-<td><CoordPicker value={p.coord||""} onSave={v=>uP(p.nm,"Coordinator",v)} project={p.nm} pj={pj}/></td>
+<td style={{textAlign:"left"}}><CoordPicker value={p.coord||""} onSave={v=>uP(p.nm,"Coordinator",v)} project={p.nm} pj={pj}/></td>
 <td><DebText value={p.pms||""} onSave={v=>uP(p.nm,"Project Managers",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.sm||""} onSave={v=>uP(p.nm,"Site Manager",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.addr||""} onSave={v=>uP(p.nm,"Address",v)} style={{width:"100%"}}/></td>
@@ -1330,17 +1330,17 @@ return<div className="pr pr-pf" key={p.nm}>
 {voView==="project"&&<span className="detail-title">Variations in <b>{selectedVoProject}</b></span>}
 {voView==="status"&&<span className="detail-title">All VOs marked <b>{selectedVoStatus==="(blank)"?"No Status":selectedVoStatus}</b></span>}
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setVoFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:voFiltTy===t?"var(--ac)":"var(--bd)",background:voFiltTy===t?"var(--ac)":"transparent",color:voFiltTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
-<div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=coordStCnt[s.v]||0;const isActive=voView==="status"?selectedVoStatus===s.v:voFiltSt.includes(s.v);const isDisabled=voView==="status"&&selectedVoStatus!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedVoStatus(s.v)}else if(voView==="project"){setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
+<div style={{display:"flex",gap:2}}>{VO_ST.map(s=>{const cnt=coordStCnt[s.v]||0;const isActive=voView==="status"?selectedVoStatus===s.v:voFiltSt.includes(s.v);const isDisabled=voView==="status"&&selectedVoStatus!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedVoStatus(s.v);setVoFiltPj("")}else if(voView==="project"){setVoFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 <input className="sx" value={voFiltPj} onChange={e=>setVoFiltPj(e.target.value)} placeholder="Search project or variation name"/>
 {Array.from(HIDEABLE_COLS).map(label=><label key={label} style={{display:"flex",alignItems:"center",gap:3,fontSize:9,color:"var(--t2)",cursor:"pointer",userSelect:"none"}}><input type="checkbox" checked={!coordHideCols.has(label)} onChange={()=>toggleHide(setCoordHideCols,coordHideCols,coordSortCol,setCoordSortCol,setCoordSortDir,label)} style={{cursor:"pointer"}}/>{label}</label>)}
 {coordSortCol&&<span style={{fontSize:9,padding:"2px 6px",border:"1px solid var(--ac)",borderRadius:10,background:"var(--ac)",color:"#fff",display:"flex",gap:4,alignItems:"center",cursor:"pointer"}} onClick={()=>{setCoordSortCol(null);setCoordSortDir(null)}} title="Click to clear sort">Sort: {Object.keys(COL_FIELD).find(k=>COL_FIELD[k]===coordSortCol)||coordSortCol} {coordSortDir==="desc"?"▼":"▲"} ✕</span>}
 <span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(coordFilteredCards.length+" projects · "+coordVO.length+" VOs · Read only"):(coordFilt.length+" of "+coordVO.length+" · Read only · Approved: $"+coordFilt.filter(v=>{const u=String(v.st).toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")}).reduce((s,v)=>s+(Number(v.pr)||0),0).toLocaleString("en-AU",{maximumFractionDigits:0}))}</span>
 </div>
 {voView==="home"?<div className="pj-grid">
-{coordFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{coordVO.length===0?(coordDisplay(coordUser)+" has no variations yet."):"No projects match your search."}</div>:coordFilteredCards.map(c=><div key={c.name} className="pj-card" style={{"--card-accent":stripeColor(c.projectStatus)}} onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all")}}>
+{coordFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{coordVO.length===0?(coordDisplay(coordUser)+" has no variations yet."):"No projects match your search."}</div>:coordFilteredCards.map(c=><div key={c.name} className="pj-card" style={{"--card-accent":stripeColor(c.projectStatus)}} onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all");setVoFiltPj("")}}>
 <div className="pjnm">{c.name}</div>
 <div className="pjmeta">{c.vos} VO{c.vos!==1?"s":""} · {fK(c.total)}</div>
-<div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
+<div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all");setVoFiltPj("")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 </div>)}
 </div>:<div className="vsc-fx"><table className="vt" style={{width:COORD_HEADERS.reduce((a,h,i)=>a+(coordHideCols.has(h)?0:coordColW[i]),0)+"px"}}><colgroup>{COORD_HEADERS.map((h,i)=>coordHideCols.has(h)?null:<col key={i} style={{width:coordColW[i]+"px"}}/>)}</colgroup><thead><tr>
 {COORD_HEADERS.map((h,ci)=>{
