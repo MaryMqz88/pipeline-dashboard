@@ -373,7 +373,7 @@ const DEF_MO=["Jan-25","Feb-25","Mar-25","Apr-25","May-25","Jun-25","Jul-25","Au
 const RN=["External Materials","ProFab Materials","Other Costs"];
 const RK=["ExtMaterials","ProfabMaterials","OtherCosts"];
 const UK="pipeline-v9";
-const COORDS=["Luka","Lizzie","Lachlan","Mary"];
+const COORDS=["Luka","Lizzie","Lachlan"];
 // Display name override: render "Lachlan" as "Lachie" in UI. DB still uses "Lachlan".
 const coordDisplay=name=>name==="Lachlan"?"Lachie":name;
 // Per-coord chip/badge colors. Light backgrounds, soft text. {bg, border, text}.
@@ -592,7 +592,7 @@ return<tr style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving
 <td style={ro}>{v.da||""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pr?fmP(v.pr):""}</td>
 {!hC&&<td style={ro}>{v.claim||""}</td>}
-<td><select value={v.st} onChange={e=>uV(v.i,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:9,fontWeight:600,width:"100%",cursor:"pointer"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
+<td><select value={v.st} onChange={e=>uV(v.vid,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:9,fontWeight:600,width:"100%",cursor:"pointer"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.em?fmP(v.em):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pf?fmP(v.pf):""}</td>
 <td style={{textAlign:"right",color:rc,fontFamily:"var(--mn)"}}>{mg?fmP(mg):""}</td>
@@ -601,7 +601,7 @@ return<tr style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nr?fmP(v.nr):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.oh?fm2(v.oh):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.or2?fmP(v.or2):""}</td>
-<td style={{textAlign:"center",cursor:v.notes?"pointer":"default"}} onClick={()=>v.notes&&onOpenNote&&onOpenNote(v.i)} title={v.notes||""}>{v.notes?<span style={{fontSize:14}}>💬</span>:<span style={{color:"var(--t2)",fontSize:12}}>—</span>}</td>
+<td style={{textAlign:"center",cursor:v.notes?"pointer":"default"}} onClick={()=>v.notes&&onOpenNote&&onOpenNote(v.vid)} title={v.notes||""}>{v.notes?<span style={{fontSize:14}}>💬</span>:<span style={{color:"var(--t2)",fontSize:12}}>—</span>}</td>
 </tr>});
  
 const CoordRow=React.memo(function CoordRow({v,vi,coordColW,onOpenNote,hideCols}){
@@ -630,7 +630,7 @@ return<tr style={{color:rc,opacity:v._pending?0.55:1}} title={editTip(v.eb,v.ea)
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nr?fmP(v.nr):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.oh?fm2(v.oh):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.or2?fmP(v.or2):""}</td>
-<td style={{textAlign:"center",cursor:v.notes?"pointer":"default"}} onClick={()=>v.notes&&onOpenNote&&onOpenNote(vi)} title={v.notes||""}>{v.notes?<span style={{fontSize:14}}>💬</span>:""}</td>
+<td style={{textAlign:"center",cursor:v.notes?"pointer":"default"}} onClick={()=>v.notes&&onOpenNote&&onOpenNote(v.vid)} title={v.notes||""}>{v.notes?<span style={{fontSize:14}}>💬</span>:""}</td>
 <td style={{textAlign:"center",fontSize:8,color:"var(--t2)"}} title={v.pushedAt?"Pushed by "+(v.pushedBy||"?")+" on "+fmEdAt(v.pushedAt):"Not yet pushed"}>{v.pushedAt?"Pushed "+fmD(v.pushedAt):"draft"}</td>
 </tr>});
  
@@ -730,10 +730,8 @@ const voFilt=useMemo(()=>{
   }
   if(voFiltTy_d!=="all")f=f.filter(v=>v.ty===voFiltTy_d);
   if(voFiltSt_d.length>0)f=f.filter(v=>voFiltSt_d.some(s=>matchStatus(v.st,s)));
-  return f.slice().sort((a,b)=>{
-    if(voSortCol)return cmp(a,b,voSortCol,voSortDir||"asc");
-    const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad
-  })
+  if(voSortCol)return f.slice().sort((a,b)=>cmp(a,b,voSortCol,voSortDir||"asc"));
+  return f
 },[vo,voView,selectedVoProject,selectedVoStatus,voFiltPj_d,voFiltTy_d,voFiltSt_d,voSortCol,voSortDir]);
 
 const coordFilt=useMemo(()=>{
@@ -747,10 +745,8 @@ const coordFilt=useMemo(()=>{
   }
   if(voFiltTy_d!=="all")f=f.filter(v=>v.ty===voFiltTy_d);
   if(voFiltSt_d.length>0)f=f.filter(v=>voFiltSt_d.some(s=>matchStatus(v.st,s)));
-  return f.slice().sort((a,b)=>{
-    if(coordSortCol)return cmp(a,b,coordSortCol,coordSortDir||"asc");
-    const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad
-  })
+  if(coordSortCol)return f.slice().sort((a,b)=>cmp(a,b,coordSortCol,coordSortDir||"asc"));
+  return f
 },[coordVO,voView,selectedVoProject,selectedVoStatus,voFiltPj_d,voFiltTy_d,voFiltSt_d,coordSortCol,coordSortDir]);
 
 // Project cards data: grouped by project, alphabetical, with per-status counts.
@@ -960,7 +956,7 @@ const renP=useCallback(async(old,nw)=>{const nwT=String(nw||"").trim();if(!nwT)r
 const loadCoordVO=async(user)=>{setCoordUser(user);sLd(true);try{const r=await fetch(API+"?action=getVariations&user="+encodeURIComponent(user)+"&passphrase="+encodeURIComponent(getPP()));const d=await r.json();const arr=d.variations||d.vos||[];setCoordVO(arr.map((v,i)=>({i,_r:v._row!==undefined?v._row:i,vid:String(F(v,"VO_ID")||""),pj:String(F(v,"PROJECT","Project")).trim(),area:String(F(v,"AREA ON JOB","")||""),ty:String(F(v,"TYPE","Type")),vn:String(F(v,"VARIATION NO.")),srn:String(F(v,"SUB REF NO.","Sub Ref No.")||""),vnm:String(F(v,"VARIATION NAME")),ds:fmD(String(F(v,"DATE SUBMITTED"))),da:fmD(String(F(v,"DATE APPROVED"))),pr:N(F(v,"PRICE","REVENUE")),claim:String(F(v,"CLAIM %","")||""),st:String(F(v,"STATUS","Status")),em:N(F(v,"EXTERNAL MATERIALS")),pf:N(F(v,"PFAB MATERIALS")),nmn:N(F(v,"NO. OF MEN")),nh:N(F(v,"NORMAL HOURS")),nr:N(F(v,"NORMAL RATE")),oh:N(F(v,"OVERTIME HOURS")),or2:N(F(v,"OVERTIME RATE")),notes:String(F(v,"NOTES","Notes")||""),creator:String(F(v,"CREATOR")||""),pushedAt:String(F(v,"PUSHED AT")||""),pushedBy:String(F(v,"PUSHED BY")||""),eb:String(F(v,"EditedBy","EDITED BY")||""),ea:String(F(v,"EditedAt","EDITED AT")||"")})));sLd(false)}catch(e){sEr("Failed: "+e.message);sLd(false)}};
 const dVO=useCallback(async(v)=>{alert("Master users cannot delete VOs.\n\nPlease ask the coordinator who owns this VO ("+(v.creator||"unknown")+") to delete it from their register.");return},[]);
 const calcDLPrice=(v,fd,val)=>{const u={...v,[fd]:val};const m=N(u.nmn)||1;return(m*N(u.nh)*N(u.nr))+(m*N(u.oh)*N(u.or2))};
-const uV=useCallback(async(vi,fd,val)=>{markLocalEdit();const v=voRef.current[vi];if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
+const uV=useCallback(async(vid,fd,val)=>{markLocalEdit();const v=voRef.current.find(x=>x.vid===vid);if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
 // Master register: only Status can land here (other cells are read-only display spans)
 if(fd!=="st")return;
 // Status revert warning: changing FROM Fully/Partially Claimed
@@ -968,7 +964,7 @@ const oldStL=String(v.st||"").toLowerCase();
 if((oldStL.includes("fully claimed")||oldStL.includes("partially claimed"))&&val!==v.st){
   if(!confirm("⚠️ Please double check.\n\nThis VO is currently marked \""+v.st+"\". Are you sure you want to change it to \""+val+"\"?\n\nReverting a claimed status can affect the audit trail."))return;
 }
-sVo(pr=>pr.map((x,i)=>i===vi?{...x,[fd]:val}:x));
+sVo(pr=>pr.map(x=>x.vid===vid?{...x,[fd]:val}:x));
 sSv(true);await enq(()=>aP({action:"updateVariation",voId:v.vid,field:"STATUS",value:val,editedBy:unRef.current,editedAt:new Date().toLocaleString("en-AU")}));sLs(new Date());sSv(false)},[]);
 const addV=async()=>{alert("Master users cannot add VOs in the Variation Register.\n\nVOs are added by coordinators in their own register, then pushed to Master.");return};
 const aPj=async()=>{const nm=nn.trim();if(!nm)return;if(pj.some(p=>nk(p.nm)===nk(nm))){alert("Project \""+nm+"\" already exists.");return}const c=parseFloat(nc.replace(/,/g,""))||0;markLocalEdit();sSv(true);sPj(p=>[{nm,jid:"",cp:c,v:0,st:"Live",_new:true},...p]);sNn("");sNc("");sSa(false);const result=await enq(()=>aP({action:"addProject",name:nm,contractPrice:c,variations:0,status:"Live"}));if(result&&result.error){sPj(p=>p.filter(x=>x.nm!==nm));alert("Failed to add project: "+result.error)}sLs(new Date());sSv(false)};
@@ -1248,7 +1244,7 @@ return<div className="pr pr-pf" key={p.nm}>
   const stickyLeft=ci<7?Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0):0;
   return <th key={h} className={ci===0?"":ci<11?"tg":ci<14?"ty":ci<19?"tp":"tg"} onClick={()=>cycleSort(setVoSortCol,setVoSortDir,voSortCol,voSortDir,fld)} style={{width:eW(ci),minWidth:40,cursor:fld?"pointer":"default",userSelect:"none",...(ci<7?{position:"sticky",left:stickyLeft,zIndex:5,background:ci<11?"#eef9f3":ci<14?"#fdf3e9":ci<19?"#f3eefb":"#eef9f3"}:{}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}{arrow}<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/></th>
 })}
-</tr></thead><tbody>{voFilt.map(v=><VORow key={v.i} v={v} colW={colW} uV={uV} dVO={dVO} onOpenNote={setVoNoteView} hideCols={voHideCols}/>)}</tbody></table></div>}
+</tr></thead><tbody>{voFilt.map(v=><VORow key={v.vid||v.i} v={v} colW={colW} uV={uV} dVO={dVO} onOpenNote={setVoNoteView} hideCols={voHideCols}/>)}</tbody></table></div>}
 </div>}
 
 {/* PROJECT SETTINGS */}
@@ -1354,19 +1350,19 @@ return<div className="pr pr-pf" key={p.nm}>
 })}
 </tr></thead><tbody>
 {coordFilt.length===0?<tr><td colSpan={22} style={{textAlign:"center",padding:20,color:"var(--t2)"}}>No entries match filter.</td></tr>:
-coordFilt.map((v,vi)=><CoordRow key={vi} v={v} vi={vi} coordColW={coordColW} onOpenNote={setCoordNoteView} hideCols={coordHideCols}/>)}
+coordFilt.map((v,vi)=><CoordRow key={v.vid||vi} v={v} vi={vi} coordColW={coordColW} onOpenNote={setCoordNoteView} hideCols={coordHideCols}/>)}
 </tbody></table></div>}
 </div>}
  
-{noteEdit!==null&&<NoteEditModal initial={vo[noteEdit]?.notes||""} title={vo[noteEdit]?.vnm||vo[noteEdit]?.pj||"Entry"} onSave={t=>{uV(noteEdit,"notes",t);setNoteEdit(null)}} onCancel={()=>setNoteEdit(null)}/>}
-{coordNoteView!==null&&coordFilt[coordNoteView]&&<div className="notes-modal" onClick={()=>setCoordNoteView(null)}>
+{noteEdit!==null&&(()=>{const ne=vo.find(v=>v.vid===noteEdit);return ne?<NoteEditModal initial={ne.notes||""} title={ne.vnm||ne.pj||"Entry"} onSave={t=>{uV(noteEdit,"notes",t);setNoteEdit(null)}} onCancel={()=>setNoteEdit(null)}/>:null})()}
+{coordNoteView!==null&&(()=>{const cn=coordVO.find(v=>v.vid===coordNoteView);return cn?<div className="notes-modal" onClick={()=>setCoordNoteView(null)}>
 <div className="notes-box" onClick={e=>e.stopPropagation()}>
-<h4>Notes — {coordFilt[coordNoteView].vnm||coordFilt[coordNoteView].pj||"Entry"} <span style={{fontSize:9,color:"var(--t2)",fontWeight:400,marginLeft:8}}>(read only)</span></h4>
-<textarea readOnly value={coordFilt[coordNoteView].notes||""} style={{cursor:"default",background:"var(--s2)"}}/>
+<h4>Notes — {cn.vnm||cn.pj||"Entry"} <span style={{fontSize:9,color:"var(--t2)",fontWeight:400,marginLeft:8}}>(read only)</span></h4>
+<textarea readOnly value={cn.notes||""} style={{cursor:"default",background:"var(--s2)"}}/>
 <div className="nbtn">
 <button className="pl" onClick={()=>setCoordNoteView(null)}>Close</button>
-</div></div></div>}
-{voNoteView!==null&&vo.find(v=>v.i===voNoteView)&&(()=>{const v=vo.find(v=>v.i===voNoteView);return<div className="notes-modal" onClick={()=>setVoNoteView(null)}>
+</div></div></div>:null})()}
+{voNoteView!==null&&vo.find(v=>v.vid===voNoteView)&&(()=>{const v=vo.find(v=>v.vid===voNoteView);return<div className="notes-modal" onClick={()=>setVoNoteView(null)}>
 <div className="notes-box" onClick={e=>e.stopPropagation()}>
 <h4>Notes — {v.vnm||v.pj||"Entry"} <span style={{fontSize:9,color:"var(--t2)",fontWeight:400,marginLeft:8}}>(read only)</span></h4>
 <textarea readOnly value={v.notes||""} style={{cursor:"default",background:"var(--s2)"}}/>
