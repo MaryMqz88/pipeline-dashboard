@@ -478,6 +478,81 @@ const DebText=React.memo(function DebText({value,onSave,placeholder,style,format
     onBlur={()=>{setFocused(false);fire(v)}}
     onKeyDown={e=>{if(e.key==="Enter"){fire(v);e.target.blur()}}}/>;
 },(a,b)=>a.value===b.value);
+
+// CoordPicker: chip + checkbox-panel cell for the Coordinator column in Project Settings.
+// Display: chips of currently assigned coords, OR a greyed "Master (admin)" badge if empty.
+// Click: opens panel with checkboxes for all valid coords. Save fires onSave(comma-separated string).
+// Empty selection -> "" -> displays as "Master (admin)".
+const CoordPicker=React.memo(function CoordPicker({value,onSave}){
+  const parseCoords=v=>{
+    const t=String(v||"").trim();
+    if(!t)return [];
+    if(t.toLowerCase()==="all")return [...COORDS];
+    return t.split(",").map(s=>s.trim()).filter(s=>COORDS.find(c=>c.toLowerCase()===s.toLowerCase()))
+            .map(s=>COORDS.find(c=>c.toLowerCase()===s.toLowerCase()));
+  };
+  const[open,setOpen]=useState(false);
+  const[picked,setPicked]=useState(()=>parseCoords(value));
+  const ref=useRef(null);
+  useEffect(()=>{setPicked(parseCoords(value))},[value]);
+  useEffect(()=>{
+    if(!open)return;
+    const onDoc=e=>{if(ref.current&&!ref.current.contains(e.target)){setOpen(false);commit()}};
+    document.addEventListener("mousedown",onDoc);
+    return()=>document.removeEventListener("mousedown",onDoc);
+  },[open,picked]);
+  const toggle=name=>{setPicked(p=>p.includes(name)?p.filter(x=>x!==name):[...p,name])};
+  const commit=()=>{
+    const newVal=picked.join(", ");
+    const oldNorm=parseCoords(value).join(", ");
+    if(newVal!==oldNorm)onSave(newVal);
+  };
+  return<div ref={ref} style={{position:"relative",width:"100%"}}>
+    <div onClick={()=>setOpen(o=>!o)} style={{cursor:"pointer",padding:"2px 4px",minHeight:18,display:"flex",flexWrap:"wrap",gap:3,alignItems:"center"}}>
+      {picked.length===0
+        ? <span style={{fontSize:9,padding:"1px 6px",borderRadius:8,background:"var(--s2)",color:"var(--t2)",fontStyle:"italic"}}>Master (admin)</span>
+        : picked.map(n=><span key={n} style={{fontSize:9,padding:"1px 6px",borderRadius:8,background:"#3a8dde15",border:"1px solid #3a8dde",color:"#3a8dde",fontWeight:600}}>{n}</span>)}
+    </div>
+    {open&&<div style={{position:"absolute",top:"100%",left:0,zIndex:50,background:"#fff",border:"1px solid var(--bd)",borderRadius:4,padding:6,boxShadow:"0 4px 12px rgba(0,0,0,0.15)",minWidth:140}}>
+      {COORDS.map(name=><label key={name} style={{display:"flex",alignItems:"center",gap:6,padding:"3px 4px",fontSize:10,cursor:"pointer",fontFamily:"var(--ft)"}}>
+        <input type="checkbox" checked={picked.includes(name)} onChange={()=>toggle(name)} style={{cursor:"pointer"}}/>
+        {name}
+      </label>)}
+      <div style={{borderTop:"1px solid var(--bd)",marginTop:4,paddingTop:4,fontSize:8,color:"var(--t2)",textAlign:"center"}}>Empty = Master (admin)</div>
+    </div>}
+  </div>;
+},(a,b)=>a.value===b.value);
+
+// ReassignDialog: shown when removing a coord from a project that has unpushed VOs.
+// Choices: Push all to master, OR Reassign to one of the remaining coords, OR Cancel.
+const ReassignDialog=function ReassignDialog({open,projectName,coordName,voCount,voIds,otherCoords,onConfirm,onCancel}){
+  const[choice,setChoice]=useState("push");
+  if(!open)return null;
+  return<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{background:"#fff",padding:20,borderRadius:8,width:480,maxWidth:"90vw",boxShadow:"0 10px 40px rgba(0,0,0,0.3)",fontFamily:"var(--ft)"}}>
+      <div style={{fontSize:13,fontWeight:600,marginBottom:6}}>Removing {coordName} from "{projectName}"</div>
+      <div style={{fontSize:11,color:"var(--tx)",marginBottom:12,lineHeight:1.5}}>{coordName} has <b>{voCount} unpushed variation{voCount!==1?"s":""}</b> in this project. What would you like to do with them?</div>
+      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
+        <label style={{display:"flex",alignItems:"center",gap:8,fontSize:11,cursor:"pointer"}}>
+          <input type="radio" name="reassign" value="push" checked={choice==="push"} onChange={()=>setChoice("push")}/>
+          Push all {voCount} to master
+        </label>
+        {otherCoords.map(c=><label key={c} style={{display:"flex",alignItems:"center",gap:8,fontSize:11,cursor:"pointer"}}>
+          <input type="radio" name="reassign" value={"to:"+c} checked={choice==="to:"+c} onChange={()=>setChoice("to:"+c)}/>
+          Reassign to {c}
+        </label>)}
+        <label style={{display:"flex",alignItems:"center",gap:8,fontSize:11,cursor:"pointer"}}>
+          <input type="radio" name="reassign" value="cancel" checked={choice==="cancel"} onChange={()=>setChoice("cancel")}/>
+          Cancel — keep {coordName} as coordinator
+        </label>
+      </div>
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <button onClick={onCancel} style={{padding:"6px 14px",border:"1px solid var(--bd)",borderRadius:4,background:"#fff",cursor:"pointer",fontSize:11}}>Cancel</button>
+        <button onClick={()=>onConfirm(choice,voIds)} className="pl gn" style={{padding:"6px 14px",fontSize:11}}>Confirm</button>
+      </div>
+    </div>
+  </div>;
+};
  
 const NoteEditModal=React.memo(function NoteEditModal({initial,title,onSave,onCancel}){const[t,sT]=useState(initial||"");
 return<div className="notes-modal" onClick={onCancel}>
@@ -516,7 +591,7 @@ return<tr style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nr?fmP(v.nr):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.oh?fm2(v.oh):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.or2?fmP(v.or2):""}</td>
-<td style={{textAlign:"center",cursor:v.notes||!v._pending?"pointer":"default"}} onClick={()=>!v._pending&&onOpenNote&&onOpenNote(v.i)} title={v.notes||"Click to add note"}>{v.notes?<span style={{fontSize:14}}>💬</span>:<span style={{color:"var(--t2)",fontSize:12}}>+</span>}</td>
+<td style={{textAlign:"center",cursor:v.notes?"pointer":"default"}} onClick={()=>v.notes&&onOpenNote&&onOpenNote(v.i)} title={v.notes||""}>{v.notes?<span style={{fontSize:14}}>💬</span>:<span style={{color:"var(--t2)",fontSize:12}}>—</span>}</td>
 </tr>});
  
 const CoordRow=React.memo(function CoordRow({v,vi,coordColW,onOpenNote,hideCols}){
@@ -602,8 +677,10 @@ const handleSumHover=(e,enter)=>{
 const[pjO,sPjO]=useState(false);const[acO,sAcO]=useState(false);
 const defCW=[24,130,130,60,70,130,140,90,90,85,70,170,80,80,80,60,60,60,60,60,50];
 const[colW,setColW]=useState(defCW);
-const defSettingsW=[24,170,80,110,130,110,140,130,200,100,110,110,150,110,50];
+const defSettingsW=[24,170,80,110,130,110,140,130,200,100,110,110,150,110,80,80,50];
 const[settingsW,setSettingsW]=useState(defSettingsW);
+const[settingsSortCol,setSettingsSortCol]=useState("jid");
+const[settingsSortDir,setSettingsSortDir]=useState("desc");
 const[descEdit,setDescEdit]=useState(null);
 const[descText,setDescText]=useState("");
 const defCoordCW=[24,130,130,60,70,130,140,90,90,85,70,170,80,80,80,60,60,60,60,60,50,70];
@@ -614,6 +691,8 @@ const startResizeS=(ci,e)=>{e.preventDefault();const startX=e.clientX;const star
 const startCoordResize=(ci,e)=>{e.preventDefault();const startX=e.clientX;const startW=coordColW[ci];const onMove=e2=>{const diff=e2.clientX-startX;setCoordColW(prev=>{const n=[...prev];n[ci]=Math.max(40,startW+diff);return n})};const onUp=()=>{document.removeEventListener("mousemove",onMove);document.removeEventListener("mouseup",onUp)};document.addEventListener("mousemove",onMove);document.addEventListener("mouseup",onUp)};
 const[noteEdit,setNoteEdit]=useState(null);
 const[coordNoteView,setCoordNoteView]=useState(null);
+const[voNoteView,setVoNoteView]=useState(null);
+const[reassignDlg,setReassignDlg]=useState(null);
 const[coordVO,setCoordVO]=useState([]);
 const[coordUser,setCoordUser]=useState("");
 const[voFiltPj,setVoFiltPj]=useState("");
@@ -712,7 +791,7 @@ const load=useCallback(async(silent)=>{
   if(!cached){try{localStorage.setItem("pipeline-cache",JSON.stringify({projects:pD,monthly:mD,variations:vD,cellColors:ccD,ts:Date.now()}))}catch(e){}}
   // Populate cell colors from server (overrides any localStorage state)
   if(ccD.length>=0){const ccm={};ccD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=String(F(row,"Month","MONTH")).trim();const cc=String(F(row,"Column","COLUMN")).trim();const co=String(F(row,"Color","COLOR")).trim();if(pn&&mn&&cc&&co)ccm[nk(pn)+"|||"+mn+"|||"+cc]=co});setCellColors(ccm);try{localStorage.setItem("pipeline-cellColors",JSON.stringify(ccm))}catch{}}
-  sPj(prev=>{const newSet=new Set(prev.filter(p=>p._new).map(p=>p.nm));return pD.map(p=>{const obj={nm:String(F(p,"Project","PROJECT","Title")).trim(),jid:String(F(p,"Job ID","JOB ID","JobID")||""),pt:String(F(p,"Payment Terms","PAYMENT TERMS")||""),cp:N(F(p,"ContractPrice","Contract Price","CONTRACT PRICE")),v:N(F(p,"Variations","VARIATIONS")),st:String(F(p,"Status","STATUS"))||"Live",coord:String(F(p,"COORDINATOR")||""),pms:String(F(p,"PROJECT MANAGERS")||""),client:String(F(p,"CLIENT")||""),desc:String(F(p,"DESCRIPTION")||""),addr:String(F(p,"ADDRESS")||""),sd:String(F(p,"START DATE")||""),td:String(F(p,"TARGET COMPLETION")||""),cphone:String(F(p,"CLIENT PHONE")||""),cemail:String(F(p,"CLIENT EMAIL")||""),sm:String(F(p,"SITE MANAGER")||""),eb:String(F(p,"EditedBy","EDITED BY")||""),ea:String(F(p,"EditedAt","EDITED AT")||"")};if(newSet.has(obj.nm))obj._new=true;return obj})});
+  sPj(prev=>{const newSet=new Set(prev.filter(p=>p._new).map(p=>p.nm));return pD.map(p=>{const obj={nm:String(F(p,"Project","PROJECT","Title")).trim(),jid:String(F(p,"Job ID","JOB ID","JobID")||""),pt:String(F(p,"Payment Terms","PAYMENT TERMS")||""),cp:N(F(p,"ContractPrice","Contract Price","CONTRACT PRICE")),v:N(F(p,"Variations","VARIATIONS")),st:String(F(p,"Status","STATUS"))||"Live",coord:String(F(p,"COORDINATOR")||""),pms:String(F(p,"PROJECT MANAGERS")||""),client:String(F(p,"CLIENT")||""),desc:String(F(p,"DESCRIPTION")||""),addr:String(F(p,"ADDRESS")||""),sd:String(F(p,"START DATE")||""),td:String(F(p,"TARGET COMPLETION")||""),cphone:String(F(p,"CLIENT PHONE")||""),cemail:String(F(p,"CLIENT EMAIL")||""),sm:String(F(p,"SITE MANAGER")||""),dlNR:N(F(p,"DL NORMAL RATE","DL Normal Rate"))||155,dlOT:N(F(p,"DL OVERTIME RATE","DL Overtime Rate"))||205,eb:String(F(p,"EditedBy","EDITED BY")||""),ea:String(F(p,"EditedAt","EDITED AT")||"")};if(newSet.has(obj.nm))obj._new=true;return obj})});
   const mm={},mE={};mD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=pM(F(row,"Month","MONTH"));if(!pn||!mn)return;const key=nk(pn)+"|||"+mn;const sV=N(F(row,"Sales","SALES")),eV=N(F(row,"ExtMaterials","EXT-MATERIALS","EXTERNAL MATERIALS")),pV=N(F(row,"ProfabMaterials","PROFAB MATERIALS")),oV=N(F(row,"OtherCosts","OTHER COSTS"));const prev=mm[key]||{Sales:0,ExtMaterials:0,ProfabMaterials:0,OtherCosts:0};mm[key]={Sales:sV||prev.Sales,ExtMaterials:eV||prev.ExtMaterials,ProfabMaterials:pV||prev.ProfabMaterials,OtherCosts:oV||prev.OtherCosts};const eb=String(F(row,"EditedBy","EDITED BY")||""),ea=String(F(row,"EditedAt","EDITED AT")||"");if(eb||ea)mE[key]={by:eb,at:ea}});
   // Merge with prev mo: preserve optimistic values for keys still in pendingMoRef (server may not have caught up).
   // Also reuse object identity for unchanged keys to skip needless re-renders.
@@ -820,7 +899,53 @@ const uC=useCallback(async(p,m,c,val)=>{markLocalEdit();markPendingMo(p,m,c,val)
   // If save failed, server hasn't been updated, so reload will revert the optimistic value (correct behavior).
   setTimeout(()=>{const k=nk(p)+"|||"+m;const cur=pendingMoRef.current.get(k);if(cur){delete cur[c];if(Object.keys(cur).length===0)pendingMoRef.current.delete(k);else pendingMoRef.current.set(k,cur)}},2000);
 },[]);
-const uP=useCallback(async(nm,fd,val)=>{markLocalEdit();const fl=fd.toLowerCase();const prop=fl.includes("contract")?"cp":fl.includes("job")?"jid":fl.includes("status")?"st":fl==="variations"?"v":fl==="coordinator"?"coord":fl==="project managers"?"pms":fl==="client"?"client":fl==="site manager"?"sm":fl==="address"?"addr":fl==="start date"?"sd":fl==="target completion"?"td":fl==="client phone"?"cphone":fl==="client email"?"cemail":fl==="description"?"desc":fl==="payment terms"?"pt":"v";const found=pjRef.current.find(p=>p.nm===nm);const original=found?(found[prop]||""):"";sPj(pr=>pr.map(p=>p.nm===nm?{...p,[prop]:val}:p));sSv(true);const result=await enq(()=>aP({action:"updateProject",name:nm,field:fd,value:val,editedBy:unRef.current,editedAt:new Date().toLocaleString("en-AU")}));if(result&&result.error){sPj(pr=>pr.map(p=>p.nm===nm?{...p,[prop]:original,_v:(p._v||0)+1}:p))}sLs(new Date());sSv(false)},[]);
+const uP=useCallback(async(nm,fd,val)=>{markLocalEdit();const fl=fd.toLowerCase();const prop=fl.includes("contract")?"cp":fl.includes("job")?"jid":fl.includes("status")?"st":fl==="variations"?"v":fl==="coordinator"?"coord":fl==="project managers"?"pms":fl==="client"?"client":fl==="site manager"?"sm":fl==="address"?"addr":fl==="start date"?"sd":fl==="target completion"?"td":fl==="client phone"?"cphone":fl==="client email"?"cemail":fl==="description"?"desc":fl==="payment terms"?"pt":fl==="dl normal rate"?"dlNR":fl==="dl overtime rate"?"dlOT":"v";const found=pjRef.current.find(p=>p.nm===nm);const original=found?(found[prop]||""):"";
+
+// Intercept Coordinator changes to detect removed coords with unpushed VOs
+if(prop==="coord"){
+  const parseList=v=>String(v||"").trim().toLowerCase()==="all"?[...COORDS]:String(v||"").split(",").map(s=>s.trim()).filter(Boolean).map(s=>COORDS.find(c=>c.toLowerCase()===s.toLowerCase())).filter(Boolean);
+  const oldList=parseList(original);
+  const newList=parseList(val);
+  const removed=oldList.filter(c=>!newList.includes(c));
+  if(removed.length>0){
+    // Ask backend which removed coords have unpushed VOs
+    const result=await enq(()=>aP({action:"countUnpushedByCoord",projectName:nm,coords:removed}));
+    if(result&&result.ok){
+      const counts=result.counts||{};
+      const voIdsByCoord=result.voIdsByCoord||{};
+      const removedWithVOs=removed.filter(c=>(counts[c]||0)>0);
+      if(removedWithVOs.length>0){
+        // Fire dialog for the first one — chain remaining if multiple
+        const processNext=(queue,idx)=>{
+          if(idx>=queue.length){
+            // All processed — finally save the coord change
+            sPj(pr=>pr.map(p=>p.nm===nm?{...p,[prop]:val}:p));
+            sSv(true);
+            enq(()=>aP({action:"updateProject",name:nm,field:fd,value:val,editedBy:unRef.current,editedAt:new Date().toLocaleString("en-AU")})).then(r=>{if(r&&r.error)sPj(pr=>pr.map(p=>p.nm===nm?{...p,[prop]:original,_v:(p._v||0)+1}:p));sSv(false);sLs(new Date())});
+            return;
+          }
+          const c=queue[idx];
+          setReassignDlg({
+            projectName:nm,coordName:c,voCount:counts[c],voIds:voIdsByCoord[c]||[],
+            otherCoords:newList.filter(x=>x!==c),
+            onConfirm:async(choice,voIds)=>{
+              setReassignDlg(null);
+              if(choice==="cancel"){return}
+              if(choice==="push"){await enq(()=>aP({action:"pushManyVariations",voIds}))}
+              else if(choice.startsWith("to:")){const target=choice.substring(3);await enq(()=>aP({action:"reassignVariations",voIds,newCreator:target}))}
+              processNext(queue,idx+1);
+            },
+            onCancel:()=>{setReassignDlg(null);}
+          });
+        };
+        processNext(removedWithVOs,0);
+        return;  // dialog handles save
+      }
+    }
+  }
+}
+
+sPj(pr=>pr.map(p=>p.nm===nm?{...p,[prop]:val}:p));sSv(true);const result=await enq(()=>aP({action:"updateProject",name:nm,field:fd,value:val,editedBy:unRef.current,editedAt:new Date().toLocaleString("en-AU")}));if(result&&result.error){sPj(pr=>pr.map(p=>p.nm===nm?{...p,[prop]:original,_v:(p._v||0)+1}:p))}sLs(new Date());sSv(false)},[]);
 const renP=useCallback(async(old,nw)=>{const nwT=String(nw||"").trim();if(!nwT)return;if(nwT.toLowerCase()===old.toLowerCase()){return}if(pjRef.current.some(p=>p.nm!==old&&p.nm.toLowerCase()===nwT.toLowerCase())){alert("A project named \""+nwT+"\" already exists.");return}markLocalEdit();sPj(pr=>pr.map(p=>p.nm===old?{...p,nm:nwT}:p));sMo(prev=>{const next={};Object.entries(prev).forEach(([k,v])=>{next[k.startsWith(nk(old)+"|||")?nk(nwT)+"|||"+k.split("|||")[1]:k]=v});return next});sSv(true);const result=await enq(()=>aP({action:"updateProject",name:old,field:"Project",value:nwT,editedBy:unRef.current,editedAt:new Date().toLocaleString("en-AU")}));if(result&&result.error){sPj(pr=>pr.map(p=>p.nm===nwT?{...p,nm:old}:p));sMo(prev=>{const next={};Object.entries(prev).forEach(([k,v])=>{next[k.startsWith(nk(nwT)+"|||")?nk(old)+"|||"+k.split("|||")[1]:k]=v});return next})}sLs(new Date());sSv(false)},[]);
 const loadCoordVO=async(user)=>{setCoordUser(user);sLd(true);try{const r=await fetch(API+"?action=getVariations&user="+encodeURIComponent(user)+"&passphrase="+encodeURIComponent(getPP()));const d=await r.json();const arr=d.variations||d.vos||[];setCoordVO(arr.map((v,i)=>({i,_r:v._row!==undefined?v._row:i,vid:String(F(v,"VO_ID")||""),pj:String(F(v,"PROJECT","Project")).trim(),area:String(F(v,"AREA ON JOB","")||""),ty:String(F(v,"TYPE","Type")),vn:String(F(v,"VARIATION NO.")),srn:String(F(v,"SUB REF NO.","Sub Ref No.")||""),vnm:String(F(v,"VARIATION NAME")),ds:fmD(String(F(v,"DATE SUBMITTED"))),da:fmD(String(F(v,"DATE APPROVED"))),pr:N(F(v,"PRICE","REVENUE")),claim:String(F(v,"CLAIM %","")||""),st:String(F(v,"STATUS","Status")),em:N(F(v,"EXTERNAL MATERIALS")),pf:N(F(v,"PFAB MATERIALS")),nmn:N(F(v,"NO. OF MEN")),nh:N(F(v,"NORMAL HOURS")),nr:N(F(v,"NORMAL RATE")),oh:N(F(v,"OVERTIME HOURS")),or2:N(F(v,"OVERTIME RATE")),notes:String(F(v,"NOTES","Notes")||""),creator:String(F(v,"CREATOR")||""),pushedAt:String(F(v,"PUSHED AT")||""),pushedBy:String(F(v,"PUSHED BY")||""),eb:String(F(v,"EditedBy","EDITED BY")||""),ea:String(F(v,"EditedAt","EDITED AT")||"")})));sLd(false)}catch(e){sEr("Failed: "+e.message);sLd(false)}};
 const dVO=useCallback(async(v)=>{alert("Master users cannot delete VOs.\n\nPlease ask the coordinator who owns this VO ("+(v.creator||"unknown")+") to delete it from their register.");return},[]);
@@ -1113,29 +1238,45 @@ return<div className="pr pr-pf" key={p.nm}>
   const stickyLeft=ci<7?Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0):0;
   return <th key={h} className={ci===0?"":ci<11?"tg":ci<14?"ty":ci<19?"tp":"tg"} onClick={()=>cycleSort(setVoSortCol,setVoSortDir,voSortCol,voSortDir,fld)} style={{width:eW(ci),minWidth:40,cursor:fld?"pointer":"default",userSelect:"none",...(ci<7?{position:"sticky",left:stickyLeft,zIndex:5,background:ci<11?"#eef9f3":ci<14?"#fdf3e9":ci<19?"#f3eefb":"#eef9f3"}:{}),borderRight:ci===6?"2px solid var(--bd)":undefined}}>{h}{arrow}<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/></th>
 })}
-</tr></thead><tbody>{voFilt.map(v=><VORow key={v.i} v={v} colW={colW} uV={uV} dVO={dVO} onOpenNote={setNoteEdit} hideCols={voHideCols}/>)}</tbody></table></div>}
+</tr></thead><tbody>{voFilt.map(v=><VORow key={v.i} v={v} colW={colW} uV={uV} dVO={dVO} onOpenNote={setVoNoteView} hideCols={voHideCols}/>)}</tbody></table></div>}
 </div>}
 
 {/* PROJECT SETTINGS */}
 {vw==="settings"&&<div className="vw-fx">
 <div style={{padding:"6px 10px",display:"flex",gap:8,alignItems:"center",borderBottom:"1px solid var(--bd)",background:"var(--s1)"}}>
 <input value={sr} onChange={e=>sSr(e.target.value)} placeholder="Search by name or job ID..." style={{padding:"4px 10px",border:"1px solid var(--bd)",borderRadius:4,fontSize:11,outline:"none",width:240,fontFamily:"var(--ft)",background:"#fff"}}/>
+{settingsSortCol&&<span style={{fontSize:9,padding:"2px 6px",border:"1px solid var(--ac)",borderRadius:10,background:"var(--ac)",color:"#fff",display:"flex",gap:4,alignItems:"center",cursor:"pointer"}} onClick={()=>{setSettingsSortCol(null);setSettingsSortDir(null)}} title="Click to clear sort">Sort: {({nm:"Project",jid:"Job ID",st:"Status",client:"Client",coord:"Coord",pms:"PMs",sm:"Site Mgr",addr:"Address",sd:"Start",td:"Target",cphone:"Phone",cemail:"Email",pt:"Pay Terms",dlNR:"DL NRate",dlOT:"DL OTRate"}[settingsSortCol]||settingsSortCol)} {settingsSortDir==="desc"?"▼":"▲"} ✕</span>}
 <span style={{fontSize:10,color:"var(--t2)",marginLeft:"auto"}}>{comp.filter(p=>!sr_d||p.nm.toLowerCase().includes(sr_d.toLowerCase())||(p.jid||"").toLowerCase().includes(sr_d.toLowerCase())).length} of {comp.length} projects</span>
 </div>
 <div className="vsc-fx">
 <table className="vt" style={{width:settingsW.reduce((a,b)=>a+b,0)+"px",minWidth:settingsW.reduce((a,b)=>a+b,0)+"px"}}>
 <colgroup>{settingsW.map((w,i)=><col key={i} style={{width:w+"px"}}/>)}</colgroup>
 <thead><tr>
-{["","Project","Job ID","Status","Client","Coordinator","Project Manager","Site Manager","Address","Start Date","Target Comp.","Phone","Email","Pay Terms","📝"].map((h,ci)=><th key={h+"_"+ci} style={{minWidth:40,position:"sticky",top:0,...(ci<3?{left:settingsW.slice(0,ci).reduce((a,b)=>a+b,0),zIndex:10,background:"#eef9f3"}:{zIndex:9,background:"#fff"}),borderRight:ci===2?"2px solid var(--bd)":undefined,padding:"4px 6px",fontSize:9,fontWeight:700,textAlign:"left",whiteSpace:"nowrap"}}>{h}{ci>0&&<div className="col-resize" onMouseDown={e=>startResizeS(ci,e)}/>}</th>)}
+{[{h:"",f:null},{h:"Project",f:"nm"},{h:"Job ID",f:"jid"},{h:"Status",f:"st"},{h:"Client",f:"client"},{h:"Coordinator",f:"coord"},{h:"Project Manager",f:"pms"},{h:"Site Manager",f:"sm"},{h:"Address",f:"addr"},{h:"Start Date",f:"sd"},{h:"Target Comp.",f:"td"},{h:"Phone",f:"cphone"},{h:"Email",f:"cemail"},{h:"Pay Terms",f:"pt"},{h:"DL NRate",f:"dlNR"},{h:"DL OTRate",f:"dlOT"},{h:"📝",f:null}].map((col,ci)=>{const isSorted=col.f&&settingsSortCol===col.f;const arrow=isSorted?(settingsSortDir==="asc"?" ▲":" ▼"):"";return<th key={col.h+"_"+ci} onClick={()=>{if(!col.f)return;if(settingsSortCol!==col.f){setSettingsSortCol(col.f);setSettingsSortDir("asc")}else if(settingsSortDir==="asc"){setSettingsSortDir("desc")}else{setSettingsSortCol(null);setSettingsSortDir(null)}}} style={{minWidth:40,position:"sticky",top:0,cursor:col.f?"pointer":"default",userSelect:"none",...(ci<3?{left:settingsW.slice(0,ci).reduce((a,b)=>a+b,0),zIndex:10,background:"#eef9f3"}:{zIndex:9,background:"#fff"}),borderRight:ci===2?"2px solid var(--bd)":undefined,padding:"4px 6px",fontSize:9,fontWeight:700,textAlign:"left",whiteSpace:"nowrap"}}>{col.h}{arrow}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResizeS(ci,e)}}/>}</th>})}
 </tr></thead>
 <tbody>
-{comp.filter(p=>!sr_d||p.nm.toLowerCase().includes(sr_d.toLowerCase())||(p.jid||"").toLowerCase().includes(sr_d.toLowerCase())).map(p=><tr key={p.nm} title={editTip(p.eb,p.ea)}>
+{(()=>{
+  let rows=comp.filter(p=>!sr_d||p.nm.toLowerCase().includes(sr_d.toLowerCase())||(p.jid||"").toLowerCase().includes(sr_d.toLowerCase()));
+  if(settingsSortCol){
+    const col=settingsSortCol,dir=settingsSortDir||"asc";
+    rows=rows.slice().sort((a,b)=>{
+      let av=a[col],bv=b[col];
+      const ae=av==null||av==="",be=bv==null||bv==="";
+      if(ae&&!be)return 1;if(!ae&&be)return -1;if(ae&&be)return 0;
+      let r;
+      if(col==="dlNR"||col==="dlOT"){r=(parseFloat(av)||0)-(parseFloat(bv)||0)}
+      else if(col==="sd"||col==="td"){r=(dsToTs(av)||0)-(dsToTs(bv)||0)}
+      else{r=String(av).toLowerCase().localeCompare(String(bv).toLowerCase())}
+      return dir==="desc"?-r:r;
+    });
+  }
+  return rows.map(p=><tr key={p.nm} title={editTip(p.eb,p.ea)}>
 <td style={{textAlign:"center",padding:0,position:"sticky",left:0,zIndex:2,background:"#fff"}}><button onClick={()=>dPj(p.nm)} style={{background:"none",border:"none",color:"var(--rd)",cursor:"pointer",fontSize:14,fontWeight:700,opacity:.4}} onMouseEnter={e=>e.target.style.opacity=1} onMouseLeave={e=>e.target.style.opacity=.4} title="Delete">×</button></td>
 <td style={{position:"sticky",left:settingsW[0],zIndex:2,background:"#fff"}}><EN value={p.nm} onSave={nw=>renP(p.nm,nw)}/></td>
 <td style={{position:"sticky",left:settingsW[0]+settingsW[1],zIndex:2,background:"#fff",borderRight:"2px solid var(--bd)"}}><JidInput key={"jid_"+(p._v||0)} value={p.jid} onSave={v=>uP(p.nm,"Job ID",v)}/></td>
 <td><select value={p.st} onChange={e=>uP(p.nm,"Status",e.target.value)} style={{background:"transparent",border:"none",fontSize:10,fontWeight:600,width:"100%",cursor:"pointer"}}><option>Pending</option><option>Awarded</option><option>Live</option><option>Completed</option></select></td>
 <td><DebText value={p.client||""} onSave={v=>uP(p.nm,"Client",v)} style={{width:"100%"}}/></td>
-<td><DebText value={p.coord||""} onSave={v=>uP(p.nm,"Coordinator",v)} style={{width:"100%"}}/></td>
+<td><CoordPicker value={p.coord||""} onSave={v=>uP(p.nm,"Coordinator",v)} project={p.nm} pj={pj}/></td>
 <td><DebText value={p.pms||""} onSave={v=>uP(p.nm,"Project Managers",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.sm||""} onSave={v=>uP(p.nm,"Site Manager",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.addr||""} onSave={v=>uP(p.nm,"Address",v)} style={{width:"100%"}}/></td>
@@ -1144,8 +1285,11 @@ return<div className="pr pr-pf" key={p.nm}>
 <td><DebText value={p.cphone||""} onSave={v=>uP(p.nm,"Client Phone",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.cemail||""} onSave={v=>uP(p.nm,"Client Email",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.pt||""} onSave={v=>uP(p.nm,"Payment Terms",v)} style={{width:"100%"}}/></td>
+<td style={{textAlign:"right"}}><EC value={p.dlNR} onChange={val=>uP(p.nm,"DL Normal Rate",val)} cls="cl" fmt={fmP}/></td>
+<td style={{textAlign:"right"}}><EC value={p.dlOT} onChange={val=>uP(p.nm,"DL Overtime Rate",val)} cls="cl" fmt={fmP}/></td>
 <td style={{textAlign:"center",cursor:"pointer"}} onClick={()=>{setDescEdit(p.nm);setDescText(p.desc||"")}}>{p.desc?<span title={p.desc} style={{fontSize:14}}>📝</span>:<span style={{color:"var(--t2)",fontSize:12}}>+</span>}</td>
-</tr>)}
+</tr>);
+})()}
 </tbody></table></div>
 </div>}
 
@@ -1212,6 +1356,14 @@ coordFilt.map((v,vi)=><CoordRow key={vi} v={v} vi={vi} coordColW={coordColW} onO
 <div className="nbtn">
 <button className="pl" onClick={()=>setCoordNoteView(null)}>Close</button>
 </div></div></div>}
+{voNoteView!==null&&vo.find(v=>v.i===voNoteView)&&(()=>{const v=vo.find(v=>v.i===voNoteView);return<div className="notes-modal" onClick={()=>setVoNoteView(null)}>
+<div className="notes-box" onClick={e=>e.stopPropagation()}>
+<h4>Notes — {v.vnm||v.pj||"Entry"} <span style={{fontSize:9,color:"var(--t2)",fontWeight:400,marginLeft:8}}>(read only)</span></h4>
+<textarea readOnly value={v.notes||""} style={{cursor:"default",background:"var(--s2)"}}/>
+<div className="nbtn">
+<button className="pl" onClick={()=>setVoNoteView(null)}>Close</button>
+</div></div></div>})()}
+<ReassignDialog open={!!reassignDlg} projectName={reassignDlg?.projectName} coordName={reassignDlg?.coordName} voCount={reassignDlg?.voCount||0} voIds={reassignDlg?.voIds||[]} otherCoords={reassignDlg?.otherCoords||[]} onConfirm={reassignDlg?.onConfirm||(()=>{})} onCancel={reassignDlg?.onCancel||(()=>{})}/>
 {selCells.length>0&&<div className="stat-bar" onClick={clearSel}>
 <span className="stat-lbl">Click to clear · {selCells.length} cell{selCells.length>1?"s":""}</span>
 <span className="stat-lbl">Sum: </span><span>{fm(selCells.reduce((a,b)=>a+b,0))}</span>
