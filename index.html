@@ -373,7 +373,17 @@ const DEF_MO=["Jan-25","Feb-25","Mar-25","Apr-25","May-25","Jun-25","Jul-25","Au
 const RN=["External Materials","ProFab Materials","Other Costs"];
 const RK=["ExtMaterials","ProfabMaterials","OtherCosts"];
 const UK="pipeline-v9";
-const COORDS=["Luka","Lizzie","Lachlan","Mary"];
+const COORDS=["Luka","Lizzie","Lachlan"];
+// Display name override: render "Lachlan" as "Lachie" in UI. DB still uses "Lachlan".
+const coordDisplay=name=>name==="Lachlan"?"Lachie":name;
+// Per-coord chip/badge colors. Light backgrounds, soft text. {bg, border, text}.
+const coordColor=name=>{
+  const n=String(name||"");
+  if(n==="Luka")    return {bg:"#e8f5ed",border:"#a8d4b6",text:"#3a4252"};   // light green
+  if(n==="Lizzie")  return {bg:"#fef5d8",border:"#e8d896",text:"#3a4252"};  // light yellow
+  if(n==="Lachlan") return {bg:"#fde9d4",border:"#f0c499",text:"#3a4252"};  // light orange
+  return {bg:"#f0f3f7",border:"#cbd5e1",text:"#3a4252"};
+};
 const NOW=new Date();const CUR_M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][NOW.getMonth()]+"-"+String(NOW.getFullYear()).slice(2);
 const LK="_LK",LS="_LS",LE="_LE",LP="_LP",LO="_LO",WK="_WK";
 const VO_ST=[{v:"Priced - Not Yet Approved",c:"var(--tx)"},{v:"Fully Claimed",c:"#1a9a6b"},{v:"Partially Claimed",c:"#c45e10"},{v:"Accepted - Not Yet Claimed",c:"#7c3aed"},{v:"Rejected",c:"#b5b5b5"},{v:"(blank)",c:"#d9534f"}];
@@ -508,17 +518,17 @@ const CoordPicker=React.memo(function CoordPicker({value,onSave}){
     if(newVal!==oldNorm)onSave(newVal);
   };
   return<div ref={ref} style={{position:"relative",width:"100%"}}>
-    <div onClick={()=>setOpen(o=>!o)} style={{cursor:"pointer",padding:"2px 4px",minHeight:18,display:"flex",flexWrap:"wrap",gap:3,alignItems:"center"}}>
+    <div onClick={()=>setOpen(o=>!o)} style={{cursor:"pointer",padding:"2px 4px",minHeight:18,display:"flex",flexWrap:"wrap",gap:4,alignItems:"center",justifyContent:"flex-start"}}>
       {picked.length===0
-        ? <span style={{fontSize:9,padding:"1px 6px",borderRadius:8,background:"var(--s2)",color:"var(--t2)",fontStyle:"italic"}}>Master (admin)</span>
-        : picked.map(n=><span key={n} style={{fontSize:9,padding:"1px 6px",borderRadius:8,background:"#3a8dde15",border:"1px solid #3a8dde",color:"#3a8dde",fontWeight:600}}>{n}</span>)}
+        ? <span style={{fontSize:9,padding:"2px 8px",borderRadius:10,background:"#f0f3f7",border:"1px solid #cbd5e1",color:"#6b7280",fontStyle:"italic"}}>Master (admin)</span>
+        : picked.map(n=>{const c=coordColor(n);return<span key={n} style={{fontSize:9,padding:"2px 8px",borderRadius:10,background:c.bg,border:"1px solid "+c.border,color:c.text,fontWeight:600}}>{coordDisplay(n)}</span>})}
     </div>
-    {open&&<div style={{position:"absolute",top:"100%",left:0,zIndex:50,background:"#fff",border:"1px solid var(--bd)",borderRadius:4,padding:6,boxShadow:"0 4px 12px rgba(0,0,0,0.15)",minWidth:140}}>
-      {COORDS.map(name=><label key={name} style={{display:"flex",alignItems:"center",gap:6,padding:"3px 4px",fontSize:10,cursor:"pointer",fontFamily:"var(--ft)"}}>
-        <input type="checkbox" checked={picked.includes(name)} onChange={()=>toggle(name)} style={{cursor:"pointer"}}/>
-        {name}
-      </label>)}
-      <div style={{borderTop:"1px solid var(--bd)",marginTop:4,paddingTop:4,fontSize:8,color:"var(--t2)",textAlign:"center"}}>Empty = Master (admin)</div>
+    {open&&<div style={{position:"absolute",top:"100%",left:0,zIndex:50,background:"#fff",border:"1px solid var(--bd)",borderRadius:6,padding:8,boxShadow:"0 4px 12px rgba(0,0,0,0.12)",minWidth:160,textAlign:"left"}}>
+      {COORDS.map(name=>{const c=coordColor(name);const checked=picked.includes(name);return<label key={name} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 6px",fontSize:11,cursor:"pointer",fontFamily:"var(--ft)",borderRadius:4,marginBottom:2,background:checked?c.bg:"transparent",border:"1px solid "+(checked?c.border:"transparent"),color:c.text,transition:"background 0.1s"}}>
+        <input type="checkbox" checked={checked} onChange={()=>toggle(name)} style={{cursor:"pointer"}}/>
+        <span style={{fontWeight:checked?600:500}}>{coordDisplay(name)}</span>
+      </label>})}
+      <div style={{borderTop:"1px solid var(--bd)",marginTop:6,paddingTop:6,fontSize:9,color:"var(--t2)",textAlign:"left",fontStyle:"italic"}}>Empty = Master (admin)</div>
     </div>}
   </div>;
 },(a,b)=>a.value===b.value);
@@ -530,8 +540,8 @@ const ReassignDialog=function ReassignDialog({open,projectName,coordName,voCount
   if(!open)return null;
   return<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}>
     <div style={{background:"#fff",padding:20,borderRadius:8,width:480,maxWidth:"90vw",boxShadow:"0 10px 40px rgba(0,0,0,0.3)",fontFamily:"var(--ft)"}}>
-      <div style={{fontSize:13,fontWeight:600,marginBottom:6}}>Removing {coordName} from "{projectName}"</div>
-      <div style={{fontSize:11,color:"var(--tx)",marginBottom:12,lineHeight:1.5}}>{coordName} has <b>{voCount} unpushed variation{voCount!==1?"s":""}</b> in this project. What would you like to do with them?</div>
+      <div style={{fontSize:13,fontWeight:600,marginBottom:6}}>Removing {coordDisplay(coordName)} from "{projectName}"</div>
+      <div style={{fontSize:11,color:"var(--tx)",marginBottom:12,lineHeight:1.5}}>{coordDisplay(coordName)} has <b>{voCount} unpushed variation{voCount!==1?"s":""}</b> in this project. What would you like to do with them?</div>
       <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
         <label style={{display:"flex",alignItems:"center",gap:8,fontSize:11,cursor:"pointer"}}>
           <input type="radio" name="reassign" value="push" checked={choice==="push"} onChange={()=>setChoice("push")}/>
@@ -539,11 +549,11 @@ const ReassignDialog=function ReassignDialog({open,projectName,coordName,voCount
         </label>
         {otherCoords.map(c=><label key={c} style={{display:"flex",alignItems:"center",gap:8,fontSize:11,cursor:"pointer"}}>
           <input type="radio" name="reassign" value={"to:"+c} checked={choice==="to:"+c} onChange={()=>setChoice("to:"+c)}/>
-          Reassign to {c}
+          Reassign to {coordDisplay(c)}
         </label>)}
         <label style={{display:"flex",alignItems:"center",gap:8,fontSize:11,cursor:"pointer"}}>
           <input type="radio" name="reassign" value="cancel" checked={choice==="cancel"} onChange={()=>setChoice("cancel")}/>
-          Cancel — keep {coordName} as coordinator
+          Cancel — keep {coordDisplay(coordName)} as coordinator
         </label>
       </div>
       <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
@@ -989,7 +999,7 @@ if(!un)return<div className="np"><div className="nc"><div style={{fontSize:40}}>
 const gC="240px 72px 62px 65px 72px 72px 65px "+vis.map(()=>"72px").join(" ");
  
 return<div className="app" onClick={e=>{if(e.target.closest('button,input,select,a'))return;const el=e.target.closest('.cl')||e.target;const txt=(el.textContent||'').replace(/[$,]/g,'').trim();const v=parseFloat(txt);if(!isNaN(v)&&v!==0&&txt.length<15){if(e.ctrlKey||e.metaKey){setSelCells(prev=>[...prev,v])}else{setSelCells([v])}}}}>
-<div className="hd"><div className="hl"><button className="sb-toggle" onClick={()=>sSbO(true)}>☰</button><h1>{vw==="grid"?"PMC & PF Pipeline":vw==="pfab"?"PFAB Pipeline":vw==="coord"?coordUser+"\u2019s VO Register":vw==="settings"?"Project Settings":"Variation Register"}</h1><span className="dot" style={{background:saveErr?"#d9534f":sv?"var(--am)":cached?"var(--rd)":"var(--gn)"}}/><span className="dx" style={{color:saveErr?"#d9534f":sv?"var(--am)":cached?"var(--rd)":"var(--gn)",cursor:saveErr?"pointer":"default",fontWeight:saveErr?700:400}} onClick={saveErr?()=>{setSaveErr(null);load()}:undefined} title={saveErr||""}>{saveErr?"⚠ Save failed - click to retry":sv?"Saving...":cached?"Offline":"Connected"}</span></div>
+<div className="hd"><div className="hl"><button className="sb-toggle" onClick={()=>sSbO(true)}>☰</button><h1>{vw==="grid"?"PMC & PF Pipeline":vw==="pfab"?"PFAB Pipeline":vw==="coord"?coordDisplay(coordUser)+"\u2019s VO Register":vw==="settings"?"Project Settings":"Variation Register"}</h1><span className="dot" style={{background:saveErr?"#d9534f":sv?"var(--am)":cached?"var(--rd)":"var(--gn)"}}/><span className="dx" style={{color:saveErr?"#d9534f":sv?"var(--am)":cached?"var(--rd)":"var(--gn)",cursor:saveErr?"pointer":"default",fontWeight:saveErr?700:400}} onClick={saveErr?()=>{setSaveErr(null);load()}:undefined} title={saveErr||""}>{saveErr?"⚠ Save failed - click to retry":sv?"Saving...":cached?"Offline":"Connected"}</span></div>
 <div className="hr"><button className="act-btn" onClick={()=>setActOpen(true)} title="See who's active and recent edits">👥 {liveCount>0&&<span className="act-btn-count">{liveCount}</span>}</button><span className="ub">👤 {un}</span>{ls&&<span className="svt">{ls.toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit"})}</span>}<button className="rb" onClick={()=>setHovOn(!hovOn)} style={{color:hovOn?"var(--ac)":"var(--t2)"}}>{hovOn?"◉":"○"} Hover</button></div></div>
 {/* ACTIVITY PANEL */}
 <div className={"act-overlay"+(actOpen?" open":"")} onClick={()=>setActOpen(false)}/>
@@ -1018,7 +1028,7 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
 <div className={"sb-item"+(vw==="grid"?" active":"")} onClick={()=>{sVw("grid");sSbO(false)}}><span className="sb-ico">📊</span>PMC & PF Pipeline</div>
 <div className={"sb-item"+(vw==="pfab"?" active":"")} onClick={()=>{sVw("pfab");sSbO(false)}}><span className="sb-ico">🏭</span>PFAB Pipeline</div>
 <div className={"sb-item"+(vw==="vos"?" active":"")} onClick={()=>{sVw("vos");goVoHome();sSbO(false)}}><span className="sb-ico">📋</span>Variation Register</div>
-{COORDS.map(u=><div key={u} className={"sb-item"+(vw==="coord"&&coordUser===u?" active":"")} onClick={()=>{sVw("coord");goVoHome();loadCoordVO(u);sSbO(false)}} style={{paddingLeft:36,fontSize:11}}><span className="sb-ico">👤</span>{u}</div>)}
+{COORDS.map(u=><div key={u} className={"sb-item"+(vw==="coord"&&coordUser===u?" active":"")} onClick={()=>{sVw("coord");goVoHome();loadCoordVO(u);sSbO(false)}} style={{paddingLeft:36,fontSize:11}}><span className="sb-ico">👤</span>{coordDisplay(u)}</div>)}
 <div className={"sb-item"+(vw==="settings"?" active":"")} onClick={()=>{sVw("settings");sSbO(false)}}><span className="sb-ico">⚙️</span>Project Settings</div>
 <div className="sb-item" style={{opacity:.4,cursor:"default"}}><span className="sb-ico">👷</span>Day Labour Dockets<span className="sb-badge">Soon</span></div>
 </div>
@@ -1327,7 +1337,7 @@ return<div className="pr pr-pf" key={p.nm}>
 <span style={{fontSize:9,color:"var(--t2)",marginLeft:"auto"}}>{voView==="home"?(coordFilteredCards.length+" projects · "+coordVO.length+" VOs · Read only"):(coordFilt.length+" of "+coordVO.length+" · Read only · Approved: $"+coordFilt.filter(v=>{const u=String(v.st).toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")}).reduce((s,v)=>s+(Number(v.pr)||0),0).toLocaleString("en-AU",{maximumFractionDigits:0}))}</span>
 </div>
 {voView==="home"?<div className="pj-grid">
-{coordFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{coordVO.length===0?(coordUser+" has no variations yet."):"No projects match your search."}</div>:coordFilteredCards.map(c=><div key={c.name} className="pj-card" style={{"--card-accent":stripeColor(c.projectStatus)}} onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all")}}>
+{coordFilteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{coordVO.length===0?(coordDisplay(coordUser)+" has no variations yet."):"No projects match your search."}</div>:coordFilteredCards.map(c=><div key={c.name} className="pj-card" style={{"--card-accent":stripeColor(c.projectStatus)}} onClick={()=>{setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([]);setVoFiltTy("all")}}>
 <div className="pjnm">{c.name}</div>
 <div className="pjmeta">{c.vos} VO{c.vos!==1?"s":""} · {fK(c.total)}</div>
 <div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedVoProject(c.name);setVoView("project");setVoFiltSt([s.v]);setVoFiltTy("all")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
