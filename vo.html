@@ -310,10 +310,10 @@ useEffect(()=>{if(!actOpen)return;let cancelled=false;const refresh=async()=>{tr
 const tAgo=(ts)=>{if(!ts)return"";const d=Date.now()-new Date(ts).getTime();if(d<60000)return"just now";if(d<3600000)return Math.floor(d/60000)+" min ago";if(d<86400000)return Math.floor(d/3600000)+"h ago";return Math.floor(d/86400000)+"d ago"};
 
 const calcDLPrice=(v,fd,val)=>{const u={...v,[fd]:val};const m=N(u.nmn)||1;return(m*N(u.nh)*N(u.nr))+(m*N(u.oh)*N(u.or2))};
-const uV=useCallback(async(vi,fd,val)=>{const v=vo[vi];if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
+const uV=useCallback(async(vid,fd,val)=>{const v=vo.find(x=>x.vid===vid);if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
 // Status revert warning: changing FROM Fully/Partially Claimed
 if(fd==="st"){const oldStL=String(v.st||"").toLowerCase();if((oldStL.includes("fully claimed")||oldStL.includes("partially claimed"))&&val!==v.st){if(!confirm("⚠️ Please double check.\n\nThis VO is currently marked \""+v.st+"\". Are you sure you want to change it to \""+val+"\"?\n\nReverting a claimed status can affect the audit trail."))return}}
-const autoP=v.ty==="DL"&&["nmn","nh","nr","oh","or2"].includes(fd);const newPr=autoP?calcDLPrice(v,fd,val):null;sVo(pr=>pr.map((x,i)=>i===vi?{...x,[fd]:val,...(autoP?{pr:newPr}:{}),ea:new Date().toISOString()}:x));
+const autoP=v.ty==="DL"&&["nmn","nh","nr","oh","or2"].includes(fd);const newPr=autoP?calcDLPrice(v,fd,val):null;sVo(pr=>pr.map(x=>x.vid===vid?{...x,[fd]:val,...(autoP?{pr:newPr}:{}),ea:new Date().toISOString()}:x));
 const m2={"pj":"PROJECT","area":"AREA ON JOB","ty":"TYPE","vn":"VARIATION NO.","srn":"SUB REF NO.","vnm":"VARIATION NAME","ds":"DATE SUBMITTED","da":"DATE APPROVED","pr":"PRICE","claim":"CLAIM %","st":"STATUS","em":"EXTERNAL MATERIALS","pf":"PFAB MATERIALS","nmn":"NO. OF MEN","nh":"NORMAL HOURS","nr":"NORMAL RATE","oh":"OVERTIME HOURS","or2":"OVERTIME RATE","notes":"NOTES"};
 sSv(true);await enq(()=>aP({action:"updateVariation",voId:v.vid,field:m2[fd]||fd,value:val,editedBy:identity,editedAt:new Date().toLocaleString("en-AU")}));if(autoP)await enq(()=>aP({action:"updateVariation",voId:v.vid,field:"PRICE",value:newPr,editedBy:identity,editedAt:new Date().toLocaleString("en-AU")}));sSv(false)},[vo,user,identity]);
 
@@ -349,10 +349,8 @@ const voFilt=useMemo(()=>{
   }
   if(filtTy_d!=="all")f=f.filter(v=>v.ty===filtTy_d);
   if(filtSt_d.length>0)f=f.filter(v=>filtSt_d.some(s=>matchStatus(v.st,s)));
-  return f.slice().sort((a,b)=>{
-    if(sortCol)return cmp(a,b,sortCol,sortDir||"asc");
-    const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad
-  })
+  if(sortCol)return f.slice().sort((a,b)=>cmp(a,b,sortCol,sortDir||"asc"));
+  return f
 },[vo,voView,selectedProject,selectedStatusOnly,filtPj_d,filtTy_d,filtSt_d,sortCol,sortDir]);
 
 // Project cards: only projects that have VOs. Excludes system + pipeline categories.
@@ -434,8 +432,8 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
 </div>
 <div style={{display:"flex",alignItems:"center",gap:6}}>
 {(voView==="project"||voView==="home")&&<button className="pl gn" onClick={()=>{if(voView==="project")sNvo({...nvo,project:selectedProject});else sNvo({...nvo,project:""});sSa(!sa)}}>{sa?"Cancel":"+ Add VO"}</button>}
-{selRows.size>0&&voView==="project"&&<select defaultValue="" onChange={async e=>{const newStatus=e.target.value;e.target.value="";if(!newStatus)return;if(!confirm("Change status to \""+newStatus+"\" for "+selRows.size+" selected VOs?"))return;sSv(true);const editedAt=new Date().toLocaleString("en-AU");for(const r of selRows){const v=vo.find(x=>x._r===r);if(v&&v.vid&&!v.vid.startsWith("vo_pending_")){sVo(prev=>prev.map(x=>x._r===r?{...x,st:newStatus,eb:identity,ea:editedAt}:x));await enq(()=>aP({action:"updateVariation",voId:v.vid,field:"STATUS",value:newStatus,editedBy:identity,editedAt}))}}setSelRows(new Set());sSv(false)}} style={{padding:"3px 6px",fontSize:10,borderRadius:4,border:"1px solid var(--ac)",cursor:"pointer",background:"#fff",color:"var(--ac)",fontFamily:"var(--ft)",fontWeight:600}}><option value="">Set Status ({selRows.size})...</option>{VO_ST.filter(s=>s.v!=="(blank)").map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select>}
-{selRows.size>0&&voView==="project"&&<button className="pl gn" onClick={async()=>{if(!confirm("Push "+selRows.size+" selected VOs to Master?"))return;sSv(true);const now=new Date().toISOString();for(const r of selRows){const v=vo.find(x=>x._r===r);if(v){sVo(prev=>prev.map(x=>(v.vid?x.vid===v.vid:x._r===r)?{...x,pushedAt:now,pushedBy:identity}:x));await enq(()=>aP({action:"pushVariation",voId:v.vid}))}}setSelRows(new Set());sSv(false)}}>{selRows.size} Push Selected</button>}
+{selRows.size>0&&voView==="project"&&<select defaultValue="" onChange={async e=>{const newStatus=e.target.value;e.target.value="";if(!newStatus)return;if(!confirm("Change status to \""+newStatus+"\" for "+selRows.size+" selected VOs?"))return;sSv(true);const editedAt=new Date().toLocaleString("en-AU");for(const r of selRows){const v=vo.find(x=>x.vid===r);if(v&&v.vid&&!v.vid.startsWith("vo_pending_")){sVo(prev=>prev.map(x=>x.vid===r?{...x,st:newStatus,eb:identity,ea:editedAt}:x));await enq(()=>aP({action:"updateVariation",voId:v.vid,field:"STATUS",value:newStatus,editedBy:identity,editedAt}))}}setSelRows(new Set());sSv(false)}} style={{padding:"3px 6px",fontSize:10,borderRadius:4,border:"1px solid var(--ac)",cursor:"pointer",background:"#fff",color:"var(--ac)",fontFamily:"var(--ft)",fontWeight:600}}><option value="">Set Status ({selRows.size})...</option>{VO_ST.filter(s=>s.v!=="(blank)").map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select>}
+{selRows.size>0&&voView==="project"&&<button className="pl gn" onClick={async()=>{if(!confirm("Push "+selRows.size+" selected VOs to Master?"))return;sSv(true);const now=new Date().toISOString();for(const r of selRows){const v=vo.find(x=>x.vid===r);if(v){sVo(prev=>prev.map(x=>(v.vid?x.vid===v.vid:x._r===r)?{...x,pushedAt:now,pushedBy:identity}:x));await enq(()=>aP({action:"pushVariation",voId:v.vid}))}}setSelRows(new Set());sSv(false)}}>{selRows.size} Push Selected</button>}
 </div>
 </div>
 <div className="br" style={{flexWrap:"wrap"}}>
@@ -478,46 +476,46 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
   const isSorted=fld&&sortCol===fld;
   const arrow=isSorted?(sortDir==="asc"?" ▲":" ▼"):"";
   const stickyLeft=ci<8?Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0):0;
-  return <th key={h+ci} className={ci<2?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} onClick={()=>cycleSort(fld)} style={{width:eW(ci),minWidth:30,cursor:fld?"pointer":"default",userSelect:"none",...(ci<8?{position:"sticky",left:stickyLeft,zIndex:5,background:ci<2?"#fff":ci<12?"#eef9f3":ci<15?"#fdf3e9":"#f3eefb"}:{}),borderRight:ci===7?"2px solid var(--bd)":undefined}}>{h==="☐"?<input type="checkbox" checked={voFilt.length>0&&voFilt.every(v2=>selRows.has(v2._r))} onChange={e=>{if(e.target.checked){const n=new Set(selRows);voFilt.forEach(v2=>n.add(v2._r));setSelRows(n)}else{setSelRows(new Set())}}} style={{cursor:"pointer"}}/>:<>{h}{arrow}</>}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/>}</th>
+  return <th key={h+ci} className={ci<2?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} onClick={()=>cycleSort(fld)} style={{width:eW(ci),minWidth:30,cursor:fld?"pointer":"default",userSelect:"none",...(ci<8?{position:"sticky",left:stickyLeft,zIndex:5,background:ci<2?"#fff":ci<12?"#eef9f3":ci<15?"#fdf3e9":"#f3eefb"}:{}),borderRight:ci===7?"2px solid var(--bd)":undefined}}>{h==="☐"?<input type="checkbox" checked={voFilt.length>0&&voFilt.every(v2=>selRows.has(v2.vid))} onChange={e=>{if(e.target.checked){const n=new Set(selRows);voFilt.forEach(v2=>n.add(v2.vid));setSelRows(n)}else{setSelRows(new Set())}}} style={{cursor:"pointer"}}/>:<>{h}{arrow}</>}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/>}</th>
 })}
 </tr></thead><tbody>
 {voFilt.length===0?<tr><td colSpan={23} style={{textAlign:"center",padding:20,color:"var(--t2)"}}>No entries.</td></tr>:
-voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="#fff";const hA=hideCols.has("Area on Job"),hC=hideCols.has("Claim %");const w=(i)=>(i===3&&hA)?0:colW[i];return<tr key={v.i} style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving... please wait before editing":editTip(v.eb,v.ea)}>
+voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="#fff";const hA=hideCols.has("Area on Job"),hC=hideCols.has("Claim %");const w=(i)=>(i===3&&hA)?0:colW[i];return<tr key={v.vid||v.i} style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving... please wait before editing":editTip(v.eb,v.ea)}>
 <td style={{textAlign:"center",padding:0,width:24,position:"sticky",left:0,zIndex:2,background:bg}}><button onClick={()=>dVO(v)} style={{background:"none",border:"none",color:"var(--rd)",cursor:"pointer",fontSize:14,fontWeight:700,opacity:.4}} onMouseEnter={e=>e.target.style.opacity=1} onMouseLeave={e=>e.target.style.opacity=.4} title="Delete">×</button></td>
-<td style={{textAlign:"center",padding:0,position:"sticky",left:w(0),zIndex:2,background:bg}}><input type="checkbox" checked={selRows.has(v._r)} onChange={e=>{const n=new Set(selRows);if(e.target.checked)n.add(v._r);else n.delete(v._r);setSelRows(n)}} style={{cursor:"pointer"}}/></td>
-<td style={{position:"sticky",left:w(0)+w(1),zIndex:2,background:bg}}><DebInput list="vo-projects-list" value={v.pj} onSave={val=>uV(v.i,"pj",val)} style={{color:rc,width:"100%"}}/></td>
-{!hA&&<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg}}><DebInput value={v.area||""} onSave={val=>uV(v.i,"area",val)} style={{color:rc,width:"100%"}}/></td>}
-<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3),zIndex:2,background:bg}}><select value={v.ty} onChange={e=>uV(v.i,"ty",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,width:"100%"}}><option>VO</option><option>DL</option></select></td>
-<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4),zIndex:2,background:bg}}><DebInput value={v.vn} onSave={val=>uV(v.i,"vn",val)} style={{color:rc}}/></td>
-<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5),zIndex:2,background:bg}}><DebInput value={v.srn||""} onSave={val=>uV(v.i,"srn",val)} style={{color:rc}}/></td>
-<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5)+w(6),zIndex:2,borderRight:"2px solid var(--bd)",background:bg}}><DebInput value={v.vnm} onSave={val=>uV(v.i,"vnm",val)} maxLen={100} style={{color:rc}}/></td>
-<td><DebInput value={v.ds} onSave={val=>uV(v.i,"ds",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc}}/></td>
-<td><DebInput value={v.da} onSave={val=>uV(v.i,"da",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc}}/></td>
-<td style={{textAlign:"right"}}><EC value={v.pr} onChange={val=>uV(v.i,"pr",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
-{!hC&&<td><DebInput value={v.claim||""} onSave={val=>uV(v.i,"claim",val)} style={{color:rc,width:"100%"}}/></td>}
-<td><select value={v.st} onChange={e=>uV(v.i,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,fontWeight:600,width:"100%"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
-<td style={{textAlign:"right"}}><EC value={v.em} onChange={val=>uV(v.i,"em",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
-<td style={{textAlign:"right"}}><EC value={v.pf} onChange={val=>uV(v.i,"pf",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
+<td style={{textAlign:"center",padding:0,position:"sticky",left:w(0),zIndex:2,background:bg}}><input type="checkbox" checked={selRows.has(v.vid)} onChange={e=>{const n=new Set(selRows);if(e.target.checked)n.add(v.vid);else n.delete(v.vid);setSelRows(n)}} style={{cursor:"pointer"}}/></td>
+<td style={{position:"sticky",left:w(0)+w(1),zIndex:2,background:bg}}><DebInput list="vo-projects-list" value={v.pj} onSave={val=>uV(v.vid,"pj",val)} style={{color:rc,width:"100%"}}/></td>
+{!hA&&<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg}}><DebInput value={v.area||""} onSave={val=>uV(v.vid,"area",val)} style={{color:rc,width:"100%"}}/></td>}
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3),zIndex:2,background:bg}}><select value={v.ty} onChange={e=>uV(v.vid,"ty",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,width:"100%"}}><option>VO</option><option>DL</option></select></td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4),zIndex:2,background:bg}}><DebInput value={v.vn} onSave={val=>uV(v.vid,"vn",val)} style={{color:rc}}/></td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5),zIndex:2,background:bg}}><DebInput value={v.srn||""} onSave={val=>uV(v.vid,"srn",val)} style={{color:rc}}/></td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5)+w(6),zIndex:2,borderRight:"2px solid var(--bd)",background:bg}}><DebInput value={v.vnm} onSave={val=>uV(v.vid,"vnm",val)} maxLen={100} style={{color:rc}}/></td>
+<td><DebInput value={v.ds} onSave={val=>uV(v.vid,"ds",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc}}/></td>
+<td><DebInput value={v.da} onSave={val=>uV(v.vid,"da",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc}}/></td>
+<td style={{textAlign:"right"}}><EC value={v.pr} onChange={val=>uV(v.vid,"pr",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
+{!hC&&<td><DebInput value={v.claim||""} onSave={val=>uV(v.vid,"claim",val)} style={{color:rc,width:"100%"}}/></td>}
+<td><select value={v.st} onChange={e=>uV(v.vid,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,fontWeight:600,width:"100%"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
+<td style={{textAlign:"right"}}><EC value={v.em} onChange={val=>uV(v.vid,"em",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
+<td style={{textAlign:"right"}}><EC value={v.pf} onChange={val=>uV(v.vid,"pf",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
 <td style={{textAlign:"right",color:rc,fontFamily:"var(--mn)"}}>{mg?fmP(mg):""}</td>
-<td style={{textAlign:"right"}}><EC value={v.nmn} onChange={val=>uV(v.i,"nmn",val)} cls="cl" style={{color:rc}} fmt={fmN}/></td>
-<td style={{textAlign:"right"}}><EC value={v.nh} onChange={val=>uV(v.i,"nh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
-<td style={{textAlign:"right"}}><EC value={v.nr} onChange={val=>uV(v.i,"nr",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
-<td style={{textAlign:"right"}}><EC value={v.oh} onChange={val=>uV(v.i,"oh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
-<td style={{textAlign:"right"}}><EC value={v.or2} onChange={val=>uV(v.i,"or2",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
-<td style={{textAlign:"center"}} onClick={()=>{setNoteEdit(v.i);setNoteText(v.notes||"")}}>{v.notes?<span title={v.notes} style={{cursor:"pointer",fontSize:14}}>💬</span>:<span style={{cursor:"pointer",color:"var(--t2)",fontSize:12}}>+</span>}</td>
+<td style={{textAlign:"right"}}><EC value={v.nmn} onChange={val=>uV(v.vid,"nmn",val)} cls="cl" style={{color:rc}} fmt={fmN}/></td>
+<td style={{textAlign:"right"}}><EC value={v.nh} onChange={val=>uV(v.vid,"nh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
+<td style={{textAlign:"right"}}><EC value={v.nr} onChange={val=>uV(v.vid,"nr",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
+<td style={{textAlign:"right"}}><EC value={v.oh} onChange={val=>uV(v.vid,"oh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
+<td style={{textAlign:"right"}}><EC value={v.or2} onChange={val=>uV(v.vid,"or2",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
+<td style={{textAlign:"center"}} onClick={()=>{setNoteEdit(v.vid);setNoteText(v.notes||"")}}>{v.notes?<span title={v.notes} style={{cursor:"pointer",fontSize:14}}>💬</span>:<span style={{cursor:"pointer",color:"var(--t2)",fontSize:12}}>+</span>}</td>
 <td style={{textAlign:"center"}}>{!v.pushedAt?<button className="push-btn" onClick={()=>pushVO(v)} style={{background:"var(--gn)"}} title="Draft — not yet pushed">Push</button>:<span style={{fontSize:9,color:"var(--t2)",cursor:"help"}} title={"Pushed by "+(v.pushedBy||"?")+" · "+fmEdAt(v.pushedAt)+" — edits now flow live"}>Pushed {fmD(v.pushedAt)}</span>}</td>
 </tr>})}
 </tbody></table></div></div>}
 
 {/* Notes modal */}
-{noteEdit!==null&&<div className="notes-modal" onClick={()=>setNoteEdit(null)}>
+{noteEdit!==null&&(()=>{const ne=vo.find(x=>x.vid===noteEdit);return<div className="notes-modal" onClick={()=>setNoteEdit(null)}>
 <div className="notes-box" onClick={e=>e.stopPropagation()}>
-<h4>Notes — {vo[noteEdit]?.vnm||vo[noteEdit]?.pj||"Entry"}</h4>
+<h4>Notes — {ne?.vnm||ne?.pj||"Entry"}</h4>
 <textarea value={noteText} onChange={e=>setNoteText(e.target.value)} autoFocus placeholder="Type notes here..."/>
 <div className="nbtn">
 <button className="pl" onClick={()=>setNoteEdit(null)}>Cancel</button>
 <button className="pl gn" onClick={()=>{uV(noteEdit,"notes",noteText);setNoteEdit(null)}}>Save</button>
-</div></div></div>}
+</div></div></div>})()}
 </>}
 {selCells.length>0&&<div className="stat-bar" onClick={clearSel}>
 <span className="stat-lbl">Click to clear · {selCells.length} cell{selCells.length>1?"s":""}</span>
