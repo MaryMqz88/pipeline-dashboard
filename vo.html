@@ -198,6 +198,7 @@ useEffect(()=>{if(!pp){setIdCheck(false);return}let cancelled=false;setIdCheck(t
 const[user,setUser]=useState(urlUser);
 const[vo,sVo]=useState([]);
 const[pj,sPj]=useState([]);
+const[allProjStatuses,setAllProjStatuses]=useState({});
 const[ld,sLd]=useState(true);
 const[sv,sSv]=useState(false);
 const[er,sEr]=useState(null);
@@ -235,6 +236,7 @@ async function aP(p){try{const pp=getPP();const body={...p};if(pp)body.passphras
 
 const load=useCallback(async(silent)=>{if(!silent)sLd(true);sEr(null);try{const pp=getPP();const r=await fetch(API+"?action=getVariations&user="+encodeURIComponent(user)+(pp?"&passphrase="+encodeURIComponent(pp):""));const d=await r.json();if(d.error){if(d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp-coord")}catch{};setPp("");sEr("Wrong coordinator passphrase. Please re-enter.");sLd(false);return}sEr(d.error);sLd(false);return}
 const vD=d.variations||d.vos||[];
+if(d.allProjectStatuses)setAllProjStatuses(d.allProjectStatuses);
 // Project list comes from a separate getAll call so the +Add picker has all options.
 let pD=[];try{const r2=await fetch(API+"?action=getAll"+(pp?"&passphrase="+encodeURIComponent(pp):""));const d2=await r2.json();if(d2&&!d2.error)pD=d2.projects||[]}catch{}
 // Filter projects to those assigned to the current coord (or "all"). Hides system projects starting with _.
@@ -351,14 +353,14 @@ const projectCards=useMemo(()=>{
   const grouped=new Map();
   vo.forEach(v=>{
     if(!isRealProject(v.pj))return;
-    if(!grouped.has(v.pj))grouped.set(v.pj,{name:v.pj,vos:0,total:0,statusCounts:{},projectStatus:pjByName.get(v.pj)||"Live"});
+    if(!grouped.has(v.pj))grouped.set(v.pj,{name:v.pj,vos:0,total:0,statusCounts:{},projectStatus:pjByName.get(v.pj)||allProjStatuses[v.pj]||"Live"});
     const g=grouped.get(v.pj);
     g.vos++;
     g.total+=Number(v.pr)||0;
     VO_ST.forEach(s=>{if(matchStatus(v.st,s.v))g.statusCounts[s.v]=(g.statusCounts[s.v]||0)+1});
   });
   return Array.from(grouped.values()).sort((a,b)=>a.name.localeCompare(b.name));
-},[vo,pj]);
+},[vo,pj,allProjStatuses]);
 
 const filteredCards=useMemo(()=>{
   if(!filtPj_d)return projectCards;
