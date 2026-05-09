@@ -125,7 +125,15 @@ const API="https://gqcemmuntzddkdwzqenq.supabase.co/functions/v1/api";
 const SUPABASE_URL="https://gqcemmuntzddkdwzqenq.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxY2VtbXVudHpkZGtkd3pxZW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTg1NjIsImV4cCI6MjA5MzY5NDU2Mn0.NwyQC3dmI6LQTLEHzDLaQLv274LcjKag1Zzgssf11aQ";
 
-const USERS=["Luka","Lizzie","Lachlan","Mary"];
+const USERS=["Luka","Lizzie","Lachlan"];
+const coordDisplay=name=>name==="Lachlan"?"Lachie":name;
+const coordColor=name=>{
+  const n=String(name||"");
+  if(n==="Luka")    return {bg:"#e8f5ed",border:"#a8d4b6",text:"#3a4252"};
+  if(n==="Lizzie")  return {bg:"#fef5d8",border:"#e8d896",text:"#3a4252"};
+  if(n==="Lachlan") return {bg:"#fde9d4",border:"#f0c499",text:"#3a4252"};
+  return {bg:"#f0f3f7",border:"#cbd5e1",text:"#3a4252"};
+};
 
 function fmP(v){if(!v&&v!==0)return"";return"$"+Number(v).toLocaleString("en-AU",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmN(v){if(!v&&v!==0)return"";return Math.round(Number(v)).toLocaleString("en-AU")}
@@ -391,11 +399,11 @@ if(!identity)return<div className="np"><div style={{textAlign:"center"}}><h2 sty
 
 if(!user)return<div className="np"><div style={{textAlign:"center"}}><h2 style={{marginBottom:12}}>Select Register</h2>
 <p style={{color:"var(--t2)",fontSize:11,marginBottom:12}}>Logged in as <b>{identity}</b></p>
-{USERS.map(u=><button key={u} onClick={()=>{setUser(u);window.history.replaceState(null,"","?user="+u)}} style={{display:"block",margin:"6px auto",padding:"10px 40px",fontSize:14,fontWeight:700,fontFamily:"var(--ft)",background:"var(--ac)",color:"#fff",border:"none",borderRadius:6,cursor:"pointer"}}>{u}</button>)}
+{USERS.map(u=>{const c=coordColor(u);return<button key={u} onClick={()=>{setUser(u);window.history.replaceState(null,"","?user="+u)}} style={{display:"block",margin:"8px auto",padding:"10px 20px",width:160,fontSize:14,fontWeight:700,fontFamily:"var(--ft)",background:c.bg,color:c.text,border:"1px solid "+c.border,borderRadius:8,cursor:"pointer",transition:"transform .1s ease, box-shadow .1s ease"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 3px 8px rgba(0,0,0,0.08)"}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=""}}>{coordDisplay(u)}</button>})}
 </div></div>;
 
 return<div className="app" onClick={e=>{if(e.target.closest('button,input,select,a,textarea'))return;const el=e.target.closest('.cl')||e.target;const txt=(el.textContent||'').replace(/[$,]/g,'').trim();const v=parseFloat(txt);if(!isNaN(v)&&v!==0&&txt.length<15){if(e.ctrlKey||e.metaKey){setSelCells(prev=>[...prev,v])}else{setSelCells([v])}}}}>
-<div className="hd"><div className="hl"><h1>Variation Register — {user}</h1>{user!==identity&&<span style={{fontSize:9,color:"var(--am)",fontWeight:700,marginLeft:4}}>(edited by {identity})</span>}<span className="dot" style={{background:saveErr?"#d9534f":sv?"var(--am)":"var(--gn)"}}/><span className="dx" style={{color:saveErr?"#d9534f":sv?"var(--am)":"var(--gn)",cursor:saveErr?"pointer":"default",fontWeight:saveErr?700:400}} onClick={saveErr?()=>{setSaveErr(null);load()}:undefined} title={saveErr||""}>{saveErr?"⚠ Save failed - click to retry":sv?"Saving...":"Connected"}</span></div>
+<div className="hd"><div className="hl"><h1>Variation Register — {coordDisplay(user)}</h1>{user!==identity&&<span style={{fontSize:9,color:"var(--am)",fontWeight:700,marginLeft:4}}>(edited by {identity})</span>}<span className="dot" style={{background:saveErr?"#d9534f":sv?"var(--am)":"var(--gn)"}}/><span className="dx" style={{color:saveErr?"#d9534f":sv?"var(--am)":"var(--gn)",cursor:saveErr?"pointer":"default",fontWeight:saveErr?700:400}} onClick={saveErr?()=>{setSaveErr(null);load()}:undefined} title={saveErr||""}>{saveErr?"⚠ Save failed - click to retry":sv?"Saving...":"Connected"}</span></div>
 <div style={{display:"flex",gap:4}}><button className="act-btn" onClick={()=>setActOpen(true)} title="Recent edits across the team">📋 Activity</button><button className="rb" onClick={()=>setUser("")}>Switch Register</button><span style={{fontSize:9,color:"var(--t2)"}}>👤 {identity}</span></div></div>
 {/* ACTIVITY PANEL */}
 <div className={"act-overlay"+(actOpen?" open":"")} onClick={()=>setActOpen(false)}/>
