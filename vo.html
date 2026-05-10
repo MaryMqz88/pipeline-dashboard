@@ -157,7 +157,7 @@ const matchStatus=(voSt,pillV)=>{
   const key=pillV.toLowerCase().split(" - ")[0].split(" ")[0];
   return String(voSt).toLowerCase().includes(key);
 };
-const SKIP_PJ=/^(extra\s*sales|day\s*lab[ou]r)$/i;
+const SKIP_PJ=/^(extra\s*sales|day\s*lab[ou]r|extra\s*sales\s*\/\s*day\s*lab[ou]r(\s*\/\s*avg\s*monthly\s*variation)?)$/i;
 const isRealProject=nm=>nm&&!nm.startsWith("_")&&!SKIP_PJ.test(nm);
 const stripeColor=st=>st==="Pending"?"#d9534f":st==="Awarded"?"#3a8dde":st==="Live"?"#1a9a6b":st==="Completed"?"#9ca3af":"#cbd5e1";
 const COL_FIELD={"":null,"☐":null,"Project":"pj","Area on Job":"area","Type":"ty","Var No.":"vn","Sub Ref No.":"srn","Name":"vnm","Date Sub.":"ds","Date Appr.":"da","Price":"pr","Claim %":"claim","Status":"st","Ext.Mat":"em","PFAB":"pf","Margin":null,"#Men":"nmn","NHrs":"nh","NRate":"nr","OTHrs":"oh","OTRate":"or2","Notes":"notes","Push":null};
