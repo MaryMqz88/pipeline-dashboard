@@ -1018,6 +1018,11 @@ const comp=useMemo(()=>pj.filter(p=>!p.nm.startsWith("_")).map((p,i)=>{let sT=0,
   // 3. Sort by snapshot's earliest claim month (stable — doesn't change mid-edit)
   const sa=sortKeys[a.nm]||{earliest:999,jid:a.jid||""};
   const sb=sortKeys[b.nm]||{earliest:999,jid:b.jid||""};
+  if(!window.__sortLogged){window.__sortLogged=0}
+  if(window.__sortLogged<3){
+    console.log("[SORT-CMP]","a.nm:",JSON.stringify(a.nm),"sa:",JSON.stringify(sa),"sortKeys size:",Object.keys(sortKeys).length);
+    window.__sortLogged++;
+  }
   if(sa.earliest!==sb.earliest)return sa.earliest-sb.earliest;
   // 4. Tie-break: Job ID descending (newer first) — also used for the "no claims" group at bottom
   const ja=String(sa.jid||""),jb=String(sb.jid||"");
