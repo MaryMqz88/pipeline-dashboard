@@ -192,7 +192,7 @@
 .pg:nth-child(even) .pr>div:nth-child(-n+7){background:#f9f9f7}
 .rw>div:nth-child(-n+7),.rg>div:nth-child(-n+7){background:#fff}
 /* Current month highlight */
-.cur-month{background:var(--ac)!important;color:#fff!important;border-left:2px solid var(--ac)!important;border-right:2px solid var(--ac)!important;font-weight:800!important}
+.cur-month{background:var(--ac)!important;color:#fff!important;box-shadow:inset 2px 0 0 0 var(--ac), inset -2px 0 0 0 var(--ac)!important;font-weight:800!important}
 /* Status filter */
 .sf{background:var(--bg);border:1px solid var(--bd);color:var(--tx);padding:3px 8px;border-radius:4px;font-family:var(--ft);font-size:10px;outline:none;cursor:pointer}
 .sf:focus{border-color:var(--ac)}
@@ -690,19 +690,6 @@ const handleSumHover=(e,enter)=>{
 };
  
 const[pjO,sPjO]=useState(false);const[acO,sAcO]=useState(false);
-// When Projected/Actual sections expand, sync their scrollLeft to whatever the main pipeline is at.
-// Without this, freshly-mounted .ss elements start at scrollLeft=0 and look misaligned until user scrolls.
-useEffect(()=>{
-  if(!pjO&&!acO)return;
-  // Wait one frame for the new sections to mount, then sync to whatever any other .ss is at
-  const id=requestAnimationFrame(()=>{
-    const els=document.querySelectorAll(".ss");
-    let target=0;
-    els.forEach(el=>{if(el.scrollLeft>target)target=el.scrollLeft});
-    els.forEach(el=>{if(el.scrollLeft!==target)el.scrollLeft=target});
-  });
-  return()=>cancelAnimationFrame(id);
-},[pjO,acO]);
 const defCW=[24,130,130,60,70,130,140,90,90,85,70,170,80,80,80,60,60,60,60,60,50];
 const[colW,setColW]=useState(defCW);
 const defSettingsW=[24,170,80,110,130,110,140,130,200,100,110,110,150,110,80,80,50];
@@ -1030,6 +1017,17 @@ const comp=useMemo(()=>pj.filter(p=>!p.nm.startsWith("_")).map((p,i)=>{let sT=0,
 }),[pj,mo,voP,sortSnapshot]);
 const flt=useMemo(()=>{let f=comp;if(stFilt.length>0)f=f.filter(p=>stFilt.includes(p.st));if(sr_d){const q=sr_d.toLowerCase();f=f.filter(p=>p.nm.toLowerCase().includes(q)||(p.jid||"").toLowerCase().includes(q))}return f},[comp,sr_d,stFilt]);
 const vis=MO.slice(startM);
+// Sync scrollLeft of all .ss elements when sections expand OR month range changes,
+// so newly-mounted/re-rendered sections align with the rest instead of jumping to scrollLeft=0
+useEffect(()=>{
+  const id=requestAnimationFrame(()=>{
+    const els=document.querySelectorAll(".ss");
+    let target=0;
+    els.forEach(el=>{if(el.scrollLeft>target)target=el.scrollLeft});
+    els.forEach(el=>{if(el.scrollLeft!==target)el.scrollLeft=target});
+  });
+  return()=>cancelAnimationFrame(id);
+},[pjO,acO,vis.length,startM]);
 const sumM=useMemo(()=>{const o={};MO.forEach(m=>{let s=0,e=0,p=0,ot=0;comp.forEach(pr=>{s+=gv(pr.nm,m,"Sales");e+=gv(pr.nm,m,"ExtMaterials");p+=gv(pr.nm,m,"ProfabMaterials");ot+=gv(pr.nm,m,"OtherCosts")});o[m]={s,e,p,ot}});return o},[comp,mo]);
 const cd=useMemo(()=>{const ms=selM.length>0?selM:null;let con=0,sal=0,ext=0,pfb=0,oth=0;flt.forEach(p=>{con+=p.tot;if(ms){ms.forEach(m=>{sal+=gv(p.nm,m,"Sales");ext+=gv(p.nm,m,"ExtMaterials");pfb+=gv(p.nm,m,"ProfabMaterials");oth+=gv(p.nm,m,"OtherCosts")})}else{sal+=p.sT;ext+=p.eT;pfb+=p.pT;oth+=p.oT}});const costs=ext+pfb+oth;return{con,sal,ext,pfb,oth,costs,gp:sal-costs,label:ms?ms.join(", "):"All months"}},[selM,flt,mo]);
 const pjStCnt=useMemo(()=>{const o={Pending:0,Awarded:0,Live:0,Completed:0};let f=comp;if(sr_d){const q=sr_d.toLowerCase();f=f.filter(p=>p.nm.toLowerCase().includes(q)||(p.jid||"").toLowerCase().includes(q))}f.forEach(p=>{if(o[p.st]!==undefined)o[p.st]++});return o},[comp,sr_d]);
@@ -1086,10 +1084,10 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
 </div>
 {er&&<div className="er">{er}</div>}
 {ld?<div className="ld"><div className="sp"/><p>Loading...</p></div>:<>
-{(vw==="grid"||vw==="pfab")&&unlockedMonthsOverdue.length>0&&<div style={{position:"sticky",top:0,zIndex:50,background:"#fff8e1",border:"1px solid #f0ad4e",borderRadius:4,padding:"8px 12px",margin:"0 0 8px 0",fontSize:11,color:"#7a4f00",display:"flex",flexWrap:"wrap",alignItems:"center",gap:8,boxShadow:"0 2px 4px rgba(0,0,0,0.06)"}}>
+{(vw==="grid"||vw==="pfab")&&unlockedMonthsOverdue.filter(m=>vis.includes(m)).length>0&&<div style={{position:"sticky",top:0,zIndex:50,background:"#fff8e1",border:"1px solid #f0ad4e",borderRadius:4,padding:"8px 12px",margin:"0 0 8px 0",fontSize:11,color:"#7a4f00",display:"flex",flexWrap:"wrap",alignItems:"center",gap:8,boxShadow:"0 2px 4px rgba(0,0,0,0.06)"}}>
   <span style={{fontSize:14}}>⚠️</span>
   <span><b>Action required — months past lock deadline.</b> The 10th-of-month deadline has passed for:</span>
-  {unlockedMonthsOverdue.map(m=><button key={m} onClick={async()=>{const lockedBefore=isLk(m);await doLock(m);if(!lockedBefore)setUnlockedMonthsOverdue(prev=>prev.filter(x=>x!==m))}} style={{padding:"3px 8px",border:"1px solid #f0ad4e",borderRadius:4,background:"#fff",color:"#7a4f00",cursor:"pointer",fontSize:10,fontWeight:600,fontFamily:"var(--ft)"}} title={"Click to lock "+m}>🔒 Lock {m}</button>)}
+  {unlockedMonthsOverdue.filter(m=>vis.includes(m)).map(m=><button key={m} onClick={async()=>{const lockedBefore=isLk(m);await doLock(m);if(!lockedBefore)setUnlockedMonthsOverdue(prev=>prev.filter(x=>x!==m))}} style={{padding:"3px 8px",border:"1px solid #f0ad4e",borderRadius:4,background:"#fff",color:"#7a4f00",cursor:"pointer",fontSize:10,fontWeight:600,fontFamily:"var(--ft)"}} title={"Click to lock "+m}>🔒 Lock {m}</button>)}
 </div>}
 {vw==="grid"&&selM.length>0&&<div style={{fontSize:9,color:"var(--pu)",fontWeight:700,marginBottom:3}}>{cd.label} <button style={{background:"none",border:"none",color:"var(--t2)",cursor:"pointer",fontSize:9}} onClick={()=>sSM([])}>✕ Clear</button></div>}
 {vw==="grid"&&<div className="cds">
