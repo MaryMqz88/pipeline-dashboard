@@ -397,7 +397,7 @@ const matchStatus=(voSt,pillV)=>{
   return String(voSt).toLowerCase().includes(key);
 };
 // Pipeline catch-all categories that aren't real jobs — exclude from VO Register cards/lists
-const SKIP_PJ=/^(extra\s*sales|day\s*lab[ou]r)$/i;
+const SKIP_PJ=/^(extra\s*sales|day\s*lab[ou]r|extra\s*sales\s*\/\s*day\s*lab[ou]r(\s*\/\s*avg\s*monthly\s*variation)?)$/i;
 const isRealProject=nm=>nm&&!nm.startsWith("_")&&!SKIP_PJ.test(nm);
 // Top-stripe color for project cards by status
 const stripeColor=st=>st==="Pending"?"#d9534f":st==="Awarded"?"#3a8dde":st==="Live"?"#1a9a6b":st==="Completed"?"#9ca3af":"#cbd5e1";
@@ -651,6 +651,10 @@ const[idCheck,setIdCheck]=useState(true);
 useEffect(()=>{if(!pp){setIdCheck(false);return}let cancelled=false;setIdCheck(true);fetch(API+"?action=getIdentity&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).then(r=>r.json()).then(d=>{if(cancelled)return;if(d&&d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp")}catch{};setPp("")}else if(d&&d.identity){sU(d.identity);try{localStorage.setItem(UK,d.identity)}catch{}};setIdCheck(false)}).catch(()=>{if(!cancelled)setIdCheck(false)});return()=>{cancelled=true}},[pp]);
 const unRef=useRef(un);unRef.current=un;
 const[ld,sLd]=useState(true);const[sv,sSv]=useState(false);const[ls,sLs]=useState(null);
+// sortVersion bumps only on full reload (load()). Pipeline sort key snapshot uses this so
+// projects don't shuffle during in-session edits — only re-evaluates when fresh server data arrives.
+const[sortVersion,setSortVersion]=useState(0);
+const[unlockedMonthsOverdue,setUnlockedMonthsOverdue]=useState([]);
 const[pj,sPj]=useState([]);const[mo,sMo]=useState({});const[vo,sVo]=useState([]);const[moE,sMoE]=useState({});
 const voRef=useRef([]);voRef.current=vo;
 const pjRef=useRef([]);pjRef.current=pj;
@@ -795,6 +799,8 @@ const load=useCallback(async(silent)=>{
     setCached(true);r=cc}}catch(e){}
     if(r.error&&!cached){sEr(r.error);sLd(false);return}}
   const pD=r.projects||[],mD=r.monthly||[],vD=r.variations||r.voRegister||[],ccD=r.cellColors||[];
+  setUnlockedMonthsOverdue(r.unlockedMonthsOverdue||[]);
+  setSortVersion(v=>v+1);
   if(!cached){try{localStorage.setItem("pipeline-cache",JSON.stringify({projects:pD,monthly:mD,variations:vD,cellColors:ccD,ts:Date.now()}))}catch(e){}}
   // Populate cell colors from server (overrides any localStorage state)
   if(ccD.length>=0){const ccm={};ccD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=String(F(row,"Month","MONTH")).trim();const cc=String(F(row,"Column","COLUMN")).trim();const co=String(F(row,"Color","COLOR")).trim();if(pn&&mn&&cc&&co)ccm[nk(pn)+"|||"+mn+"|||"+cc]=co});setCellColors(ccm);try{localStorage.setItem("pipeline-cellColors",JSON.stringify(ccm))}catch{}}
@@ -972,9 +978,43 @@ const aPj=async()=>{const nm=nn.trim();if(!nm)return;if(pj.some(p=>nk(p.nm)===nk
 const dPj=async nm=>{const voCount=voRef.current.filter(v=>v.pj===nm).length;let msg;if(voCount>0){msg='Delete "'+nm+'"?\n\nThis project has '+voCount+' variation'+(voCount===1?"":"s")+' in the VO Register. Deleting the project here will also delete all of those variations permanently — including any that have already been pushed and approved.\n\nThis cannot be undone.'}else{msg='Delete "'+nm+'"?\n\nThis will permanently remove the project and all its pipeline data (monthly entries, budgets, lock states).\n\nThis cannot be undone.'}if(!confirm(msg))return;markLocalEdit();sSv(true);await enq(()=>aP({action:"deleteProject",name:nm}));sPj(p=>p.filter(x=>x.nm!==nm));sMo(p=>{const x={...p};Object.keys(x).forEach(k=>{if(k.startsWith(nk(nm)+"|||"))delete x[k]});return x});sVo(p=>p.filter(v=>v.pj!==nm));sSv(false);sLs(new Date())};
  
 const isLk=m=>gv(LK,m,"Sales")===1;
+// Drop locked months from the overdue banner list as soon as their lock state flips on
+useEffect(()=>{setUnlockedMonthsOverdue(prev=>prev.filter(m=>!isLk(m)))},[mo]);
 const doLock=async m=>{const lockedNow=isLk(m);if(lockedNow){if(!confirm("Unlock "+m+"?\n\nThis will discard the frozen totals for "+m+" and show the live sums from the project rows above.\n\nIf project rows have changed since locking, the displayed totals will update to reflect those changes."))return}else{if(!confirm("Lock "+m+"?\n\nThis will freeze the projected sales and materials cost totals for "+m+". The values shown at the top of the column will stop updating even if the underlying project rows change.\n\nYou can unlock anytime to refresh."))return}markLocalEdit();const at=new Date().toLocaleString("en-AU");const u=unRef.current;if(!lockedNow){const s=comp.reduce((a,p)=>a+gv(p.nm,m,"Sales"),0);const e=comp.reduce((a,p)=>a+gv(p.nm,m,"ExtMaterials"),0);const p2=comp.reduce((a,p)=>a+gv(p.nm,m,"ProfabMaterials"),0);const o=comp.reduce((a,p)=>a+gv(p.nm,m,"OtherCosts"),0);sMo(pr=>({...pr,[nk(LK)+"|||"+m]:{...(pr[nk(LK)+"|||"+m]||{}),Sales:1},[nk(LS)+"|||"+m]:{...(pr[nk(LS)+"|||"+m]||{}),Sales:s},[nk(LE)+"|||"+m]:{...(pr[nk(LE)+"|||"+m]||{}),Sales:e},[nk(LP)+"|||"+m]:{...(pr[nk(LP)+"|||"+m]||{}),Sales:p2},[nk(LO)+"|||"+m]:{...(pr[nk(LO)+"|||"+m]||{}),Sales:o}}));sSv(true);await enq(()=>aP({action:"lockMonth",month:m,lock:1,salesTotal:s,extTotal:e,pfabTotal:p2,otherTotal:o,editedBy:u,editedAt:at}));sLs(new Date());sSv(false)}else{sMo(pr=>({...pr,[nk(LK)+"|||"+m]:{...(pr[nk(LK)+"|||"+m]||{}),Sales:0},[nk(LS)+"|||"+m]:{...(pr[nk(LS)+"|||"+m]||{}),Sales:0},[nk(LE)+"|||"+m]:{...(pr[nk(LE)+"|||"+m]||{}),Sales:0},[nk(LP)+"|||"+m]:{...(pr[nk(LP)+"|||"+m]||{}),Sales:0},[nk(LO)+"|||"+m]:{...(pr[nk(LO)+"|||"+m]||{}),Sales:0}}));sSv(true);await enq(()=>aP({action:"lockMonth",month:m,lock:0,editedBy:u,editedAt:at}));sLs(new Date());sSv(false)}};
  
-const comp=useMemo(()=>pj.filter(p=>!p.nm.startsWith("_")).map((p,i)=>{let sT=0,eT=0,pT=0,oT=0;MO.forEach(m=>{sT+=gv(p.nm,m,"Sales");eT+=gv(p.nm,m,"ExtMaterials");pT+=gv(p.nm,m,"ProfabMaterials");oT+=gv(p.nm,m,"OtherCosts")});const avo=voP[nk(p.nm)]||0,tot=p.cp+p.v+avo,eB=gv(p.nm,"_BC","ExtMaterials")+gv(p.nm,"_BV","ExtMaterials"),pB=gv(p.nm,"_BC","ProfabMaterials")+gv(p.nm,"_BV","ProfabMaterials"),oB=gv(p.nm,"_BC","OtherCosts")+gv(p.nm,"_BV","OtherCosts"),gp=tot-(eB||eT)-(pB||pT)-(oB||oT);const fc=MO.findIndex(m=>gv(p.nm,m,"Sales")>0);return{...p,i,sT,eT,pT,oT,avo,tot,gp,tba:tot-sT,fc:fc===-1?999:fc}}).sort((a,b)=>{if(a._new&&!b._new)return -1;if(!a._new&&b._new)return 1;const re=/extra\s*sales|day\s*lab[ou]r/i;const ae=re.test(a.nm),be=re.test(b.nm);if(ae&&!be)return 1;if(!ae&&be)return -1;return a.fc-b.fc}),[pj,mo,voP]);
+// Sort-order snapshot — captures earliest claim month + Job ID for each project at reload time.
+// In-session edits don't re-trigger this; project order stays stable while typing.
+const sortSnapshot=useMemo(()=>{
+  const snap={};
+  pj.filter(p=>!p.nm.startsWith("_")).forEach(p=>{
+    const earliestIdx=MO.findIndex(m=>gv(p.nm,m,"Sales")>0);
+    snap[p.nm]={earliest:earliestIdx===-1?999:earliestIdx,jid:p.jid||"",isNew:!!p._new};
+  });
+  return snap;
+// eslint-disable-next-line react-hooks/exhaustive-deps
+},[sortVersion,pj.length]);
+
+const comp=useMemo(()=>pj.filter(p=>!p.nm.startsWith("_")).map((p,i)=>{let sT=0,eT=0,pT=0,oT=0;MO.forEach(m=>{sT+=gv(p.nm,m,"Sales");eT+=gv(p.nm,m,"ExtMaterials");pT+=gv(p.nm,m,"ProfabMaterials");oT+=gv(p.nm,m,"OtherCosts")});const avo=voP[nk(p.nm)]||0,tot=p.cp+p.v+avo,eB=gv(p.nm,"_BC","ExtMaterials")+gv(p.nm,"_BV","ExtMaterials"),pB=gv(p.nm,"_BC","ProfabMaterials")+gv(p.nm,"_BV","ProfabMaterials"),oB=gv(p.nm,"_BC","OtherCosts")+gv(p.nm,"_BV","OtherCosts"),gp=tot-(eB||eT)-(pB||pT)-(oB||oT);const fc=MO.findIndex(m=>gv(p.nm,m,"Sales")>0);return{...p,i,sT,eT,pT,oT,avo,tot,gp,tba:tot-sT,fc:fc===-1?999:fc}}).sort((a,b)=>{
+  // 1. Newly added projects always at top (during session)
+  if(a._new&&!b._new)return -1;
+  if(!a._new&&b._new)return 1;
+  // 2. "Extra Sales / Day Labour / Avg Monthly Variation" pseudo-row always last
+  const re=/extra\s*sales|day\s*lab[ou]r|avg\s*monthly/i;
+  const ae=re.test(a.nm),be=re.test(b.nm);
+  if(ae&&!be)return 1;
+  if(!ae&&be)return -1;
+  // 3. Sort by snapshot's earliest claim month (stable — doesn't change mid-edit)
+  const sa=sortSnapshot[a.nm]||{earliest:999,jid:""};
+  const sb=sortSnapshot[b.nm]||{earliest:999,jid:""};
+  if(sa.earliest!==sb.earliest)return sa.earliest-sb.earliest;
+  // 4. Tie-break: Job ID descending (newer first)
+  const ja=String(sa.jid||""),jb=String(sb.jid||"");
+  if(ja&&!jb)return -1;
+  if(!ja&&jb)return 1;
+  if(ja&&jb){const cmp=jb.localeCompare(ja,undefined,{numeric:true});if(cmp!==0)return cmp}
+  // 5. No Job ID for both: stable order from DB (already in pj array order)
+  return 0;
+}),[pj,mo,voP,sortSnapshot]);
 const flt=useMemo(()=>{let f=comp;if(stFilt.length>0)f=f.filter(p=>stFilt.includes(p.st));if(sr_d){const q=sr_d.toLowerCase();f=f.filter(p=>p.nm.toLowerCase().includes(q)||(p.jid||"").toLowerCase().includes(q))}return f},[comp,sr_d,stFilt]);
 const vis=MO.slice(startM);
 const sumM=useMemo(()=>{const o={};MO.forEach(m=>{let s=0,e=0,p=0,ot=0;comp.forEach(pr=>{s+=gv(pr.nm,m,"Sales");e+=gv(pr.nm,m,"ExtMaterials");p+=gv(pr.nm,m,"ProfabMaterials");ot+=gv(pr.nm,m,"OtherCosts")});o[m]={s,e,p,ot}});return o},[comp,mo]);
@@ -1033,6 +1073,11 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
 </div>
 {er&&<div className="er">{er}</div>}
 {ld?<div className="ld"><div className="sp"/><p>Loading...</p></div>:<>
+{(vw==="grid"||vw==="pfab")&&unlockedMonthsOverdue.length>0&&<div style={{position:"sticky",top:0,zIndex:50,background:"#fff8e1",border:"1px solid #f0ad4e",borderRadius:4,padding:"8px 12px",margin:"0 0 8px 0",fontSize:11,color:"#7a4f00",display:"flex",flexWrap:"wrap",alignItems:"center",gap:8,boxShadow:"0 2px 4px rgba(0,0,0,0.06)"}}>
+  <span style={{fontSize:14}}>⚠️</span>
+  <span><b>Action required — months past lock deadline.</b> The 10th-of-month deadline has passed for:</span>
+  {unlockedMonthsOverdue.map(m=><button key={m} onClick={async()=>{const lockedBefore=isLk(m);await doLock(m);if(!lockedBefore)setUnlockedMonthsOverdue(prev=>prev.filter(x=>x!==m))}} style={{padding:"3px 8px",border:"1px solid #f0ad4e",borderRadius:4,background:"#fff",color:"#7a4f00",cursor:"pointer",fontSize:10,fontWeight:600,fontFamily:"var(--ft)"}} title={"Click to lock "+m}>🔒 Lock {m}</button>)}
+</div>}
 {vw==="grid"&&selM.length>0&&<div style={{fontSize:9,color:"var(--pu)",fontWeight:700,marginBottom:3}}>{cd.label} <button style={{background:"none",border:"none",color:"var(--t2)",cursor:"pointer",fontSize:9}} onClick={()=>sSM([])}>✕ Clear</button></div>}
 {vw==="grid"&&<div className="cds">
 <div className={"cd"+(selM.length?" se":"")}><div className="lb">Total Contract</div><div className="vl" style={{color:"var(--ac)"}}>{fK(selM.length?flt.filter(p=>selM.some(m=>gv(p.nm,m,"Sales")>0)).reduce((t,p)=>t+p.tot,0):cd.con)}</div><div className="sb">{selM.length?flt.filter(p=>selM.some(m=>gv(p.nm,m,"Sales")>0)).length+" projects · "+cd.label:flt.length+" projects"}</div></div>
