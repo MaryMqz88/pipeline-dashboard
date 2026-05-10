@@ -690,6 +690,19 @@ const handleSumHover=(e,enter)=>{
 };
  
 const[pjO,sPjO]=useState(false);const[acO,sAcO]=useState(false);
+// When Projected/Actual sections expand, sync their scrollLeft to whatever the main pipeline is at.
+// Without this, freshly-mounted .ss elements start at scrollLeft=0 and look misaligned until user scrolls.
+useEffect(()=>{
+  if(!pjO&&!acO)return;
+  // Wait one frame for the new sections to mount, then sync to whatever any other .ss is at
+  const id=requestAnimationFrame(()=>{
+    const els=document.querySelectorAll(".ss");
+    let target=0;
+    els.forEach(el=>{if(el.scrollLeft>target)target=el.scrollLeft});
+    els.forEach(el=>{if(el.scrollLeft!==target)el.scrollLeft=target});
+  });
+  return()=>cancelAnimationFrame(id);
+},[pjO,acO]);
 const defCW=[24,130,130,60,70,130,140,90,90,85,70,170,80,80,80,60,60,60,60,60,50];
 const[colW,setColW]=useState(defCW);
 const defSettingsW=[24,170,80,110,130,110,140,130,200,100,110,110,150,110,80,80,50];
