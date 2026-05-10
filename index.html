@@ -982,17 +982,27 @@ const isLk=m=>gv(LK,m,"Sales")===1;
 useEffect(()=>{setUnlockedMonthsOverdue(prev=>prev.filter(m=>!isLk(m)))},[mo]);
 const doLock=async m=>{const lockedNow=isLk(m);if(lockedNow){if(!confirm("Unlock "+m+"?\n\nThis will discard the frozen totals for "+m+" and show the live sums from the project rows above.\n\nIf project rows have changed since locking, the displayed totals will update to reflect those changes."))return}else{if(!confirm("Lock "+m+"?\n\nThis will freeze the projected sales and materials cost totals for "+m+". The values shown at the top of the column will stop updating even if the underlying project rows change.\n\nYou can unlock anytime to refresh."))return}markLocalEdit();const at=new Date().toLocaleString("en-AU");const u=unRef.current;if(!lockedNow){const s=comp.reduce((a,p)=>a+gv(p.nm,m,"Sales"),0);const e=comp.reduce((a,p)=>a+gv(p.nm,m,"ExtMaterials"),0);const p2=comp.reduce((a,p)=>a+gv(p.nm,m,"ProfabMaterials"),0);const o=comp.reduce((a,p)=>a+gv(p.nm,m,"OtherCosts"),0);sMo(pr=>({...pr,[nk(LK)+"|||"+m]:{...(pr[nk(LK)+"|||"+m]||{}),Sales:1},[nk(LS)+"|||"+m]:{...(pr[nk(LS)+"|||"+m]||{}),Sales:s},[nk(LE)+"|||"+m]:{...(pr[nk(LE)+"|||"+m]||{}),Sales:e},[nk(LP)+"|||"+m]:{...(pr[nk(LP)+"|||"+m]||{}),Sales:p2},[nk(LO)+"|||"+m]:{...(pr[nk(LO)+"|||"+m]||{}),Sales:o}}));sSv(true);await enq(()=>aP({action:"lockMonth",month:m,lock:1,salesTotal:s,extTotal:e,pfabTotal:p2,otherTotal:o,editedBy:u,editedAt:at}));sLs(new Date());sSv(false)}else{sMo(pr=>({...pr,[nk(LK)+"|||"+m]:{...(pr[nk(LK)+"|||"+m]||{}),Sales:0},[nk(LS)+"|||"+m]:{...(pr[nk(LS)+"|||"+m]||{}),Sales:0},[nk(LE)+"|||"+m]:{...(pr[nk(LE)+"|||"+m]||{}),Sales:0},[nk(LP)+"|||"+m]:{...(pr[nk(LP)+"|||"+m]||{}),Sales:0},[nk(LO)+"|||"+m]:{...(pr[nk(LO)+"|||"+m]||{}),Sales:0}}));sSv(true);await enq(()=>aP({action:"lockMonth",month:m,lock:0,editedBy:u,editedAt:at}));sLs(new Date());sSv(false)}};
  
-// Sort-order snapshot — captures earliest claim month + Job ID for each project at reload time.
-// In-session edits don't re-trigger this; project order stays stable while typing.
-const sortSnapshot=useMemo(()=>{
+// Stable sort key for Pipeline projects.
+// Recomputes only when sortVersion bumps (i.e. after a full load), reading the
+// then-current `mo` data to find each project's earliest claim month.
+// During in-session edits, this state is NOT touched — projects don't shuffle while typing.
+const[sortKeys,setSortKeys]=useState({});
+useEffect(()=>{
+  // Skip until first load completes (pj has data and at least some mo rows exist)
+  if(pj.length===0)return;
   const snap={};
   pj.filter(p=>!p.nm.startsWith("_")).forEach(p=>{
-    const earliestIdx=MO.findIndex(m=>gv(p.nm,m,"Sales")>0);
-    snap[p.nm]={earliest:earliestIdx===-1?999:earliestIdx,jid:p.jid||"",isNew:!!p._new};
+    let earliestIdx=999;
+    for(let i=0;i<MO.length;i++){
+      const key=nk(p.nm)+"|||"+MO[i];
+      const row=mo[key];
+      if(row&&row.Sales>0){earliestIdx=i;break}
+    }
+    snap[p.nm]={earliest:earliestIdx,jid:p.jid||"",isNew:!!p._new};
   });
-  return snap;
+  setSortKeys(snap);
 // eslint-disable-next-line react-hooks/exhaustive-deps
-},[sortVersion,pj.length]);
+},[sortVersion]);
 
 const comp=useMemo(()=>pj.filter(p=>!p.nm.startsWith("_")).map((p,i)=>{let sT=0,eT=0,pT=0,oT=0;MO.forEach(m=>{sT+=gv(p.nm,m,"Sales");eT+=gv(p.nm,m,"ExtMaterials");pT+=gv(p.nm,m,"ProfabMaterials");oT+=gv(p.nm,m,"OtherCosts")});const avo=voP[nk(p.nm)]||0,tot=p.cp+p.v+avo,eB=gv(p.nm,"_BC","ExtMaterials")+gv(p.nm,"_BV","ExtMaterials"),pB=gv(p.nm,"_BC","ProfabMaterials")+gv(p.nm,"_BV","ProfabMaterials"),oB=gv(p.nm,"_BC","OtherCosts")+gv(p.nm,"_BV","OtherCosts"),gp=tot-(eB||eT)-(pB||pT)-(oB||oT);const fc=MO.findIndex(m=>gv(p.nm,m,"Sales")>0);return{...p,i,sT,eT,pT,oT,avo,tot,gp,tba:tot-sT,fc:fc===-1?999:fc}}).sort((a,b)=>{
   // 1. Newly added projects always at top (during session)
@@ -1004,17 +1014,17 @@ const comp=useMemo(()=>pj.filter(p=>!p.nm.startsWith("_")).map((p,i)=>{let sT=0,
   if(ae&&!be)return 1;
   if(!ae&&be)return -1;
   // 3. Sort by snapshot's earliest claim month (stable — doesn't change mid-edit)
-  const sa=sortSnapshot[a.nm]||{earliest:999,jid:""};
-  const sb=sortSnapshot[b.nm]||{earliest:999,jid:""};
+  const sa=sortKeys[a.nm]||{earliest:999,jid:a.jid||""};
+  const sb=sortKeys[b.nm]||{earliest:999,jid:b.jid||""};
   if(sa.earliest!==sb.earliest)return sa.earliest-sb.earliest;
-  // 4. Tie-break: Job ID descending (newer first)
+  // 4. Tie-break: Job ID descending (newer first) — also used for the "no claims" group at bottom
   const ja=String(sa.jid||""),jb=String(sb.jid||"");
   if(ja&&!jb)return -1;
   if(!ja&&jb)return 1;
   if(ja&&jb){const cmp=jb.localeCompare(ja,undefined,{numeric:true});if(cmp!==0)return cmp}
-  // 5. No Job ID for both: stable order from DB (already in pj array order)
+  // 5. No Job ID for both: stable order from DB
   return 0;
-}),[pj,mo,voP,sortSnapshot]);
+}),[pj,mo,voP,sortKeys]);
 const flt=useMemo(()=>{let f=comp;if(stFilt.length>0)f=f.filter(p=>stFilt.includes(p.st));if(sr_d){const q=sr_d.toLowerCase();f=f.filter(p=>p.nm.toLowerCase().includes(q)||(p.jid||"").toLowerCase().includes(q))}return f},[comp,sr_d,stFilt]);
 const vis=MO.slice(startM);
 // Sync scrollLeft of all .ss elements when sections expand OR month range changes,
