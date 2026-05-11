@@ -452,7 +452,7 @@ const EC_COLORS={red:"var(--rd)",green:"var(--gn)",orange:"#c45e10",blue:"var(--
 const EC=React.memo(function EC({value,onChange,cls,color,onContext,style,fmt}){const[e,sE]=useState(false);const[d,sD]=useState("");const r=useRef();const ocR=useRef(onChange);ocR.current=onChange;
 useEffect(()=>{if(e&&r.current)r.current.focus()},[e]);
 const c=()=>{sE(false);const n=parseFloat(d.replace(/,/g,""))||0;if(n!==(value||0))ocR.current(n)};
-if(e)return<input ref={r} className="ci" value={d} onChange={x=>sD(x.target.value)} onBlur={c} onKeyDown={x=>{if(x.key==="Enter")c();if(x.key==="Escape")sE(false)}}/>;
+if(e)return<input ref={r} className="ci" style={style} value={d} onChange={x=>sD(x.target.value)} onBlur={c} onKeyDown={x=>{if(x.key==="Enter")c();if(x.key==="Escape")sE(false)}}/>;
 const isRed=color==="red";
 const inlineColor=color&&color!=="default"&&color!=="red"?{color:EC_COLORS[color]}:{};
 return<div className={(cls||"cl cs")+(isRed?" tent":"")} style={{...(style||{}),...inlineColor}} onContextMenu={e=>{e.preventDefault();if(onContext)onContext(e)}} onClick={e=>{if(e.ctrlKey||e.metaKey)return;sD(value?String(value):"");sE(true)}}>{value?(fmt?fmt(value):fm(value)):""}</div>},(a,b)=>a.value===b.value&&a.cls===b.cls&&a.color===b.color&&a.fmt===b.fmt&&((a.style&&a.style.color)||"")===((b.style&&b.style.color)||""));
@@ -585,19 +585,19 @@ return<tr style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving
 <td style={{textAlign:"center",padding:0,width:24,position:"sticky",left:0,zIndex:2,background:bg}} title={"Created by "+(v.creator||"?")+(v.pushedAt?" · Pushed by "+(v.pushedBy||"?")+" on "+fmEdAt(v.pushedAt):" (not pushed)")+(v.eb?" · Last edited by "+v.eb+(v.ea?" on "+fmEdAt(v.ea):""):"")}><span style={{fontSize:9,color:"var(--t2)",fontWeight:700}}>{(v.pushedBy||v.creator||"?").substring(0,1).toUpperCase()}</span></td>
 <td style={{position:"sticky",left:w(0),zIndex:2,background:bg,...ro}}>{v.pj}</td>
 {!hA&&<td style={{position:"sticky",left:w(0)+w(1),zIndex:2,background:bg,...ro}}>{v.area||""}</td>}
-<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg,...ro}}>{v.ty}</td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg,...ro,textAlign:"center"}}>{v.ty}</td>
 <td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3),zIndex:2,background:bg,...ro}}>{v.vn}</td>
 <td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4),zIndex:2,background:bg,...ro}}>{v.srn||""}</td>
 <td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5),zIndex:2,borderRight:"2px solid var(--bd)",background:bg,...ro}}>{v.vnm}</td>
-<td style={ro}>{v.ds||""}</td>
-<td style={ro}>{v.da||""}</td>
+<td style={{...ro,textAlign:"center"}}>{v.ds||""}</td>
+<td style={{...ro,textAlign:"center"}}>{v.da||""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pr?fmP(v.pr):""}</td>
 {!hC&&<td style={ro}>{v.claim||""}</td>}
 <td><select value={v.st} onChange={e=>uV(v.vid,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:9,fontWeight:600,width:"100%",cursor:"pointer"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.em?fmP(v.em):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pf?fmP(v.pf):""}</td>
 <td style={{textAlign:"right",color:rc,fontFamily:"var(--mn)"}}>{mg?fmP(mg):""}</td>
-<td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nmn?fmN(v.nmn):""}</td>
+<td style={{textAlign:"center",...ro,fontFamily:"var(--mn)"}}>{v.nmn?fmN(v.nmn):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nh?fm2(v.nh):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nr?fmP(v.nr):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.oh?fm2(v.oh):""}</td>
@@ -614,19 +614,19 @@ return<tr style={{color:rc,opacity:v._pending?0.55:1}} title={editTip(v.eb,v.ea)
 <td style={{textAlign:"center",padding:0,position:"sticky",left:0,zIndex:2,background:bg}} title={"Created by "+(v.creator||"?")+(v.pushedAt?" · Pushed by "+(v.pushedBy||"?")+" on "+fmEdAt(v.pushedAt):" (not pushed)")}><span style={{fontSize:9,color:"var(--t2)",fontWeight:700}}>{(v.creator||v.pushedBy||"?").substring(0,1).toUpperCase()}</span></td>
 <td style={{position:"sticky",left:w(0),zIndex:2,background:bg,...ro}}>{v.pj}</td>
 {!hA&&<td style={{position:"sticky",left:w(0)+w(1),zIndex:2,background:bg,...ro}}>{v.area||""}</td>}
-<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg,...ro}}>{v.ty}</td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg,...ro,textAlign:"center"}}>{v.ty}</td>
 <td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3),zIndex:2,background:bg,...ro}}>{v.vn}</td>
 <td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4),zIndex:2,background:bg,...ro}}>{v.srn||""}</td>
 <td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5),zIndex:2,background:bg,borderRight:"2px solid var(--bd)",...ro}}>{v.vnm}</td>
-<td style={ro}>{v.ds||""}</td>
-<td style={ro}>{v.da||""}</td>
+<td style={{...ro,textAlign:"center"}}>{v.ds||""}</td>
+<td style={{...ro,textAlign:"center"}}>{v.da||""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pr?fmP(v.pr):""}</td>
 {!hC&&<td style={ro}>{v.claim||""}</td>}
 <td style={{fontWeight:600,...ro}}>{v.st}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.em?fmP(v.em):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.pf?fmP(v.pf):""}</td>
 <td style={{textAlign:"right",color:rc,fontFamily:"var(--mn)"}}>{mg?fmP(mg):""}</td>
-<td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nmn?fmN(v.nmn):""}</td>
+<td style={{textAlign:"center",...ro,fontFamily:"var(--mn)"}}>{v.nmn?fmN(v.nmn):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nh?fm2(v.nh):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.nr?fmP(v.nr):""}</td>
 <td style={{textAlign:"right",...ro,fontFamily:"var(--mn)"}}>{v.oh?fm2(v.oh):""}</td>
@@ -1329,7 +1329,7 @@ return<div className="pr pr-pf" key={p.nm}>
 <table className="vt" style={{width:settingsW.reduce((a,b)=>a+b,0)+"px",minWidth:settingsW.reduce((a,b)=>a+b,0)+"px"}}>
 <colgroup>{settingsW.map((w,i)=><col key={i} style={{width:w+"px"}}/>)}</colgroup>
 <thead><tr>
-{[{h:"",f:null},{h:"Project",f:"nm"},{h:"Job ID",f:"jid"},{h:"Status",f:"st"},{h:"Client",f:"client"},{h:"Coordinator",f:"coord"},{h:"Project Manager",f:"pms"},{h:"Site Manager",f:"sm"},{h:"Address",f:"addr"},{h:"Start Date",f:"sd"},{h:"Target Comp.",f:"td"},{h:"Phone",f:"cphone"},{h:"Email",f:"cemail"},{h:"Pay Terms",f:"pt"},{h:"DL NRate",f:"dlNR"},{h:"DL OTRate",f:"dlOT"},{h:"📝",f:null}].map((col,ci)=>{const isSorted=col.f&&settingsSortCol===col.f;const arrow=isSorted?(settingsSortDir==="asc"?" ▲":" ▼"):"";return<th key={col.h+"_"+ci} onClick={()=>{if(!col.f)return;if(settingsSortCol!==col.f){setSettingsSortCol(col.f);setSettingsSortDir("asc")}else if(settingsSortDir==="asc"){setSettingsSortDir("desc")}else{setSettingsSortCol(null);setSettingsSortDir(null)}}} style={{minWidth:40,position:"sticky",top:0,cursor:col.f?"pointer":"default",userSelect:"none",...(ci<3?{left:settingsW.slice(0,ci).reduce((a,b)=>a+b,0),zIndex:10,background:"#eef9f3"}:{zIndex:9,background:"#fff"}),borderRight:ci===2?"2px solid var(--bd)":undefined,padding:"4px 6px",fontSize:9,fontWeight:700,textAlign:"left",whiteSpace:"nowrap"}}>{col.h}{arrow}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResizeS(ci,e)}}/>}</th>})}
+{[{h:"",f:null},{h:"Project",f:"nm"},{h:"Job ID",f:"jid"},{h:"Status",f:"st"},{h:"Client",f:"client"},{h:"Coordinator",f:"coord"},{h:"Project Manager",f:"pms"},{h:"Site Manager",f:"sm"},{h:"Address",f:"addr"},{h:"Start Date",f:"sd"},{h:"Target Comp.",f:"td"},{h:"Phone",f:"cphone"},{h:"Email",f:"cemail"},{h:"Pay Terms",f:"pt"},{h:"DL NRate",f:"dlNR"},{h:"DL OTRate",f:"dlOT"},{h:"📝",f:null}].map((col,ci)=>{const isSorted=col.f&&settingsSortCol===col.f;const arrow=isSorted?(settingsSortDir==="asc"?" ▲":" ▼"):"";return<th key={col.h+"_"+ci} onClick={()=>{if(!col.f)return;if(settingsSortCol!==col.f){setSettingsSortCol(col.f);setSettingsSortDir("asc")}else if(settingsSortDir==="asc"){setSettingsSortDir("desc")}else{setSettingsSortCol(null);setSettingsSortDir(null)}}} style={{minWidth:40,position:"sticky",top:0,cursor:col.f?"pointer":"default",userSelect:"none",...(ci<3?{left:settingsW.slice(0,ci).reduce((a,b)=>a+b,0),zIndex:10,background:"#eef9f3"}:{zIndex:9,background:"#fff"}),borderRight:ci===2?"2px solid var(--bd)":undefined,padding:"4px 6px",fontSize:9,fontWeight:700,textAlign:[2,3,9,10,14,15,16].includes(ci)?"center":"left",whiteSpace:"nowrap"}}>{col.h}{arrow}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResizeS(ci,e)}}/>}</th>})}
 </tr></thead>
 <tbody>
 {(()=>{
@@ -1350,20 +1350,20 @@ return<div className="pr pr-pf" key={p.nm}>
   return rows.map(p=><tr key={p.nm} title={editTip(p.eb,p.ea)}>
 <td style={{textAlign:"center",padding:0,position:"sticky",left:0,zIndex:2,background:"#fff"}}><button onClick={()=>dPj(p.nm)} style={{background:"none",border:"none",color:"var(--rd)",cursor:"pointer",fontSize:14,fontWeight:700,opacity:.4}} onMouseEnter={e=>e.target.style.opacity=1} onMouseLeave={e=>e.target.style.opacity=.4} title="Delete">×</button></td>
 <td style={{position:"sticky",left:settingsW[0],zIndex:2,background:"#fff"}}><EN value={p.nm} onSave={nw=>renP(p.nm,nw)}/></td>
-<td style={{position:"sticky",left:settingsW[0]+settingsW[1],zIndex:2,background:"#fff",borderRight:"2px solid var(--bd)"}}><JidInput key={"jid_"+(p._v||0)} value={p.jid} onSave={v=>uP(p.nm,"Job ID",v)}/></td>
-<td><select value={p.st} onChange={e=>uP(p.nm,"Status",e.target.value)} style={{background:"transparent",border:"none",fontSize:10,fontWeight:600,width:"100%",cursor:"pointer"}}><option>Pending</option><option>Awarded</option><option>Live</option><option>Completed</option></select></td>
+<td style={{position:"sticky",left:settingsW[0]+settingsW[1],zIndex:2,background:"#fff",borderRight:"2px solid var(--bd)",textAlign:"center"}}><JidInput key={"jid_"+(p._v||0)} value={p.jid} onSave={v=>uP(p.nm,"Job ID",v)}/></td>
+<td><select value={p.st} onChange={e=>uP(p.nm,"Status",e.target.value)} style={{background:"transparent",border:"none",fontSize:10,fontWeight:600,width:"100%",cursor:"pointer",textAlign:"center"}}><option>Pending</option><option>Awarded</option><option>Live</option><option>Completed</option></select></td>
 <td><DebText value={p.client||""} onSave={v=>uP(p.nm,"Client",v)} style={{width:"100%"}}/></td>
 <td style={{textAlign:"left"}}><CoordPicker value={p.coord||""} onSave={v=>uP(p.nm,"Coordinator",v)} project={p.nm} pj={pj}/></td>
 <td><DebText value={p.pms||""} onSave={v=>uP(p.nm,"Project Managers",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.sm||""} onSave={v=>uP(p.nm,"Site Manager",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.addr||""} onSave={v=>uP(p.nm,"Address",v)} style={{width:"100%"}}/></td>
-<td><DebText value={p.sd||""} onSave={v=>uP(p.nm,"Start Date",v)} format={fmD} placeholder="dd-mmm-yy" style={{width:"100%"}}/></td>
-<td><DebText value={p.td||""} onSave={v=>uP(p.nm,"Target Completion",v)} format={fmD} placeholder="dd-mmm-yy" style={{width:"100%"}}/></td>
+<td><DebText value={p.sd||""} onSave={v=>uP(p.nm,"Start Date",v)} format={fmD} placeholder="dd-mmm-yy" style={{width:"100%",textAlign:"center"}}/></td>
+<td><DebText value={p.td||""} onSave={v=>uP(p.nm,"Target Completion",v)} format={fmD} placeholder="dd-mmm-yy" style={{width:"100%",textAlign:"center"}}/></td>
 <td><DebText value={p.cphone||""} onSave={v=>uP(p.nm,"Client Phone",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.cemail||""} onSave={v=>uP(p.nm,"Client Email",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.pt||""} onSave={v=>uP(p.nm,"Payment Terms",v)} style={{width:"100%"}}/></td>
-<td style={{textAlign:"right"}}><EC value={p.dlNR} onChange={val=>uP(p.nm,"DL Normal Rate",val)} cls="cl" fmt={fmP}/></td>
-<td style={{textAlign:"right"}}><EC value={p.dlOT} onChange={val=>uP(p.nm,"DL Overtime Rate",val)} cls="cl" fmt={fmP}/></td>
+<td style={{textAlign:"center"}}><EC value={p.dlNR} onChange={val=>uP(p.nm,"DL Normal Rate",val)} cls="cl" style={{textAlign:"center"}} fmt={fmP}/></td>
+<td style={{textAlign:"center"}}><EC value={p.dlOT} onChange={val=>uP(p.nm,"DL Overtime Rate",val)} cls="cl" style={{textAlign:"center"}} fmt={fmP}/></td>
 <td style={{textAlign:"center",cursor:"pointer"}} onClick={()=>{setDescEdit(p.nm);setDescText(p.desc||"")}}>{p.desc?<span title={p.desc} style={{fontSize:14}}>📝</span>:<span style={{color:"var(--t2)",fontSize:12}}>+</span>}</td>
 </tr>);
 })()}
