@@ -485,19 +485,19 @@ voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="
 <td style={{textAlign:"center",padding:0,position:"sticky",left:w(0),zIndex:2,background:bg}}><input type="checkbox" checked={selRows.has(v.vid)} onChange={e=>{const n=new Set(selRows);if(e.target.checked)n.add(v.vid);else n.delete(v.vid);setSelRows(n)}} style={{cursor:"pointer"}}/></td>
 <td style={{position:"sticky",left:w(0)+w(1),zIndex:2,background:bg}}><DebInput list="vo-projects-list" value={v.pj} onSave={val=>uV(v.vid,"pj",val)} style={{color:rc,width:"100%"}}/></td>
 {!hA&&<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg}}><DebInput value={v.area||""} onSave={val=>uV(v.vid,"area",val)} style={{color:rc,width:"100%"}}/></td>}
-<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3),zIndex:2,background:bg}}><select value={v.ty} onChange={e=>uV(v.vid,"ty",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,width:"100%"}}><option>VO</option><option>DL</option></select></td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3),zIndex:2,background:bg}}><select value={v.ty} onChange={e=>uV(v.vid,"ty",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,width:"100%",textAlign:"center"}}><option>VO</option><option>DL</option></select></td>
 <td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4),zIndex:2,background:bg}}><DebInput value={v.vn} onSave={val=>uV(v.vid,"vn",val)} style={{color:rc}}/></td>
 <td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5),zIndex:2,background:bg}}><DebInput value={v.srn||""} onSave={val=>uV(v.vid,"srn",val)} style={{color:rc}}/></td>
 <td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5)+w(6),zIndex:2,borderRight:"2px solid var(--bd)",background:bg}}><DebInput value={v.vnm} onSave={val=>uV(v.vid,"vnm",val)} maxLen={100} style={{color:rc}}/></td>
-<td><DebInput value={v.ds} onSave={val=>uV(v.vid,"ds",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc}}/></td>
-<td><DebInput value={v.da} onSave={val=>uV(v.vid,"da",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc}}/></td>
+<td><DebInput value={v.ds} onSave={val=>uV(v.vid,"ds",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc,textAlign:"center"}}/></td>
+<td><DebInput value={v.da} onSave={val=>uV(v.vid,"da",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc,textAlign:"center"}}/></td>
 <td style={{textAlign:"right"}}><EC value={v.pr} onChange={val=>uV(v.vid,"pr",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
 {!hC&&<td><DebInput value={v.claim||""} onSave={val=>uV(v.vid,"claim",val)} style={{color:rc,width:"100%"}}/></td>}
 <td><select value={v.st} onChange={e=>uV(v.vid,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,fontWeight:600,width:"100%"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
 <td style={{textAlign:"right"}}><EC value={v.em} onChange={val=>uV(v.vid,"em",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
 <td style={{textAlign:"right"}}><EC value={v.pf} onChange={val=>uV(v.vid,"pf",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
 <td style={{textAlign:"right",color:rc,fontFamily:"var(--mn)"}}>{mg?fmP(mg):""}</td>
-<td style={{textAlign:"right"}}><EC value={v.nmn} onChange={val=>uV(v.vid,"nmn",val)} cls="cl" style={{color:rc}} fmt={fmN}/></td>
+<td style={{textAlign:"center"}}><EC value={v.nmn} onChange={val=>uV(v.vid,"nmn",val)} cls="cl" style={{color:rc,textAlign:"center"}} fmt={fmN}/></td>
 <td style={{textAlign:"right"}}><EC value={v.nh} onChange={val=>uV(v.vid,"nh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
 <td style={{textAlign:"right"}}><EC value={v.nr} onChange={val=>uV(v.vid,"nr",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
 <td style={{textAlign:"right"}}><EC value={v.oh} onChange={val=>uV(v.vid,"oh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
