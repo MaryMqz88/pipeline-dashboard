@@ -6,7 +6,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f4f6f9;--s1:#ffffff;--s2:#edf0f5;--s3:#e2e6ed;--bd:#cdd3de;--tx:#1e2330;--t2:#6b7489;--ac:#4472c4;--a2:#3560b5;--gn:#1a9a6b;--am:#a07008;--rd:#dc4a4a;--pu:#a78bfa;--ft:'Outfit',sans-serif;--mn:'Aptos','Calibri','Segoe UI',sans-serif}
-*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}body{background:var(--bg);color:var(--tx);font-family:var(--ft)}
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}body{background:var(--bg);color:var(--tx);font-family:var(--ft);font-size:11px}
 .np{position:fixed;inset:0;background:#f4f6f9;display:flex;align-items:center;justify-content:center;z-index:100}
 .nc{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:32px;max-width:380px;width:90%;text-align:center}
 .nc h2{font-size:22px;font-weight:800;margin:12px 0 6px}.nc p{font-size:12px;color:var(--t2);margin-bottom:14px}
@@ -336,7 +336,7 @@ input[type=number]{-moz-appearance:textfield}
 .vo-card .vl{font-size:16px;font-weight:800;margin-top:2px}
 /* Project cards grid (home view) */
 .pj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:10px;overflow-y:auto;flex:1;min-height:0;align-content:start}
-.pj-card{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:12px 14px;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
+.pj-card{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:12px 14px;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;align-self:start}
 .pj-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-accent,var(--bd))}
 .pj-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:var(--ac)}
 .pj-card .pjnm{font-weight:700;font-size:13px;color:#3a4252;line-height:1.3}
