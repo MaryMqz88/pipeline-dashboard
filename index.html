@@ -793,7 +793,7 @@ const sendClaimEmail=(p)=>{
   const fullMonths=["January","February","March","April","May","June","July","August","September","October","November","December"];
   const d=new Date();const monthYear=fullMonths[d.getMonth()]+" "+d.getFullYear();
   const subject="Claim Submitted — "+p.nm+" — "+monthYear;
-  const body="Hi "+caName+",\n\nJust confirming our claim for "+p.nm+" has been submitted for "+monthYear+".\n\nPlease let us know if you have any questions or need any clarification.";
+  const body="Hi "+caName+",\n\nJust confirming our claim for "+p.nm+" has been submitted for "+monthYear+".\nPlease let us know if you have any questions or need any clarification.\n\n\n";
   const cc="jake@prolinegroup.au,salman@prolinegroup.au";
   const url="mailto:"+caEmail+"?cc="+cc+"&subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
   window.location.href=url;
