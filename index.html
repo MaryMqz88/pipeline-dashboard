@@ -347,6 +347,10 @@ input[type=number]{-moz-appearance:textfield}
 .back-btn:hover{background:var(--s2)}
 .detail-title{font-size:12px;color:var(--t2);font-weight:600;margin-left:8px}
 .detail-title b{color:var(--tx);font-weight:700}
+.email-btn{width:22px;height:22px;border-radius:5px;background:#3b5bdb;color:#fff;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:11px;line-height:1;box-shadow:0 2px 6px rgba(59,91,219,.4);transition:transform .12s ease,box-shadow .12s ease,background .12s ease;flex-shrink:0;padding:0}
+.email-btn:hover{box-shadow:0 3px 10px rgba(59,91,219,.55);transform:translateY(-1px);background:#3247c4}
+.email-btn.warn{background:#e0e0e0;color:#888;box-shadow:none}
+.email-btn.warn:hover{background:#d0d0d0;transform:none;box-shadow:none}
  
 .vt th:nth-child(-n+6){z-index:5;background:var(--s2)}
 .vt td:nth-child(-n+6){background:#fff}
@@ -690,7 +694,7 @@ const handleSumHover=(e,enter)=>{
 const[pjO,sPjO]=useState(false);const[acO,sAcO]=useState(false);
 const defCW=[24,130,130,60,70,130,140,90,90,85,70,170,80,80,80,60,60,60,60,60,50];
 const[colW,setColW]=useState(defCW);
-const defSettingsW=[24,170,80,110,130,110,140,130,200,100,110,110,150,110,80,80,50];
+const defSettingsW=[24,170,80,110,130,110,140,130,200,100,110,140,110,150,110,80,80,50];
 const[settingsW,setSettingsW]=useState(defSettingsW);
 const[settingsSortCol,setSettingsSortCol]=useState("jid");
 const[settingsSortDir,setSettingsSortDir]=useState("desc");
@@ -780,6 +784,20 @@ const sub=n=>{localStorage.setItem(UK,n);sU(n)};
 const togM=m=>sSM(p=>p.includes(m)?p.filter(x=>x!==m):[...p,m]);
 const togExp=nm=>sExp(p=>({...p,[nm]:!p[nm]}));
 const syncScroll=e=>{const sl=e.target.scrollLeft;document.querySelectorAll('.ss').forEach(el=>{if(el!==e.target)el.scrollLeft=sl})};
+// Claim notification email — opens user's default mail client (Outlook) with a pre-filled compose window.
+// Sender = whoever's signed into Outlook (intended: Claudio). CC'd to Jake + Salman. Signature attached automatically by Outlook.
+const sendClaimEmail=(p)=>{
+  const caEmail=String(p.cemail||"").trim();
+  const caName=String(p.caName||"").trim();
+  if(!caEmail||!caName){alert("This project is missing CA Name and/or Contract Admin Email — please fill in via Project Settings first.");return}
+  const fullMonths=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const d=new Date();const monthYear=fullMonths[d.getMonth()]+" "+d.getFullYear();
+  const subject="Claim Submitted — "+p.nm+" — "+monthYear;
+  const body="Hi "+caName+",\n\nJust confirming our claim for "+p.nm+" has been submitted for "+monthYear+".\n\nPlease let us know if you have any questions or need any clarification.";
+  const cc="jake@prolinegroup.au,salman@prolinegroup.au";
+  const url="mailto:"+caEmail+"?cc="+cc+"&subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+  window.location.href=url;
+};
  
 const load=useCallback(async(silent)=>{
   if(!silent)sLd(true);sEr(null);const r=await aG("getAll");
@@ -802,7 +820,7 @@ const load=useCallback(async(silent)=>{
   if(!cached){try{localStorage.setItem("pipeline-cache",JSON.stringify({projects:pD,monthly:mD,variations:vD,cellColors:ccD,ts:Date.now()}))}catch(e){}}
   // Populate cell colors from server (overrides any localStorage state)
   if(ccD.length>=0){const ccm={};ccD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=String(F(row,"Month","MONTH")).trim();const cc=String(F(row,"Column","COLUMN")).trim();const co=String(F(row,"Color","COLOR")).trim();if(pn&&mn&&cc&&co)ccm[nk(pn)+"|||"+mn+"|||"+cc]=co});setCellColors(ccm);try{localStorage.setItem("pipeline-cellColors",JSON.stringify(ccm))}catch{}}
-  sPj(prev=>{const newSet=new Set(prev.filter(p=>p._new).map(p=>p.nm));return pD.map(p=>{const obj={nm:String(F(p,"Project","PROJECT","Title")).trim(),jid:String(F(p,"Job ID","JOB ID","JobID")||""),pt:String(F(p,"Payment Terms","PAYMENT TERMS")||""),cp:N(F(p,"ContractPrice","Contract Price","CONTRACT PRICE")),v:N(F(p,"Variations","VARIATIONS")),st:String(F(p,"Status","STATUS"))||"Live",coord:String(F(p,"COORDINATOR")||""),pms:String(F(p,"PROJECT MANAGERS")||""),client:String(F(p,"CLIENT")||""),desc:String(F(p,"DESCRIPTION")||""),addr:String(F(p,"ADDRESS")||""),sd:String(F(p,"START DATE")||""),td:String(F(p,"TARGET COMPLETION")||""),cphone:String(F(p,"CLIENT PHONE")||""),cemail:String(F(p,"CLIENT EMAIL")||""),sm:String(F(p,"SITE MANAGER")||""),dlNR:N(F(p,"DL NORMAL RATE","DL Normal Rate"))||155,dlOT:N(F(p,"DL OVERTIME RATE","DL Overtime Rate"))||205,eb:String(F(p,"EditedBy","EDITED BY")||""),ea:String(F(p,"EditedAt","EDITED AT")||"")};if(newSet.has(obj.nm))obj._new=true;return obj})});
+  sPj(prev=>{const newSet=new Set(prev.filter(p=>p._new).map(p=>p.nm));return pD.map(p=>{const obj={nm:String(F(p,"Project","PROJECT","Title")).trim(),jid:String(F(p,"Job ID","JOB ID","JobID")||""),pt:String(F(p,"Payment Terms","PAYMENT TERMS")||""),cp:N(F(p,"ContractPrice","Contract Price","CONTRACT PRICE")),v:N(F(p,"Variations","VARIATIONS")),st:String(F(p,"Status","STATUS"))||"Live",coord:String(F(p,"COORDINATOR")||""),pms:String(F(p,"PROJECT MANAGERS")||""),client:String(F(p,"CLIENT")||""),desc:String(F(p,"DESCRIPTION")||""),addr:String(F(p,"ADDRESS")||""),sd:String(F(p,"START DATE")||""),td:String(F(p,"TARGET COMPLETION")||""),cphone:String(F(p,"CLIENT PHONE")||""),cemail:String(F(p,"CLIENT EMAIL")||""),caName:String(F(p,"CA NAME")||""),sm:String(F(p,"SITE MANAGER")||""),dlNR:N(F(p,"DL NORMAL RATE","DL Normal Rate"))||155,dlOT:N(F(p,"DL OVERTIME RATE","DL Overtime Rate"))||205,eb:String(F(p,"EditedBy","EDITED BY")||""),ea:String(F(p,"EditedAt","EDITED AT")||"")};if(newSet.has(obj.nm))obj._new=true;return obj})});
   const mm={},mE={};mD.forEach(row=>{const pn=String(F(row,"Project","PROJECT")).trim();const mn=pM(F(row,"Month","MONTH"));if(!pn||!mn)return;const key=nk(pn)+"|||"+mn;const sV=N(F(row,"Sales","SALES")),eV=N(F(row,"ExtMaterials","EXT-MATERIALS","EXTERNAL MATERIALS")),pV=N(F(row,"ProfabMaterials","PROFAB MATERIALS")),oV=N(F(row,"OtherCosts","OTHER COSTS"));const prev=mm[key]||{Sales:0,ExtMaterials:0,ProfabMaterials:0,OtherCosts:0};mm[key]={Sales:sV||prev.Sales,ExtMaterials:eV||prev.ExtMaterials,ProfabMaterials:pV||prev.ProfabMaterials,OtherCosts:oV||prev.OtherCosts};const eb=String(F(row,"EditedBy","EDITED BY")||""),ea=String(F(row,"EditedAt","EDITED AT")||"");if(eb||ea)mE[key]={by:eb,at:ea}});
   // Merge with prev mo: preserve optimistic values for keys still in pendingMoRef (server may not have caught up).
   // Also reuse object identity for unchanged keys to skip needless re-renders.
@@ -910,7 +928,7 @@ const uC=useCallback(async(p,m,c,val)=>{markLocalEdit();markPendingMo(p,m,c,val)
   // If save failed, server hasn't been updated, so reload will revert the optimistic value (correct behavior).
   setTimeout(()=>{const k=nk(p)+"|||"+m;const cur=pendingMoRef.current.get(k);if(cur){delete cur[c];if(Object.keys(cur).length===0)pendingMoRef.current.delete(k);else pendingMoRef.current.set(k,cur)}},2000);
 },[]);
-const uP=useCallback(async(nm,fd,val)=>{markLocalEdit();const fl=fd.toLowerCase();const prop=fl.includes("contract")?"cp":fl.includes("job")?"jid":fl.includes("status")?"st":fl==="variations"?"v":fl==="coordinator"?"coord":fl==="project managers"?"pms":fl==="client"?"client":fl==="site manager"?"sm":fl==="address"?"addr":fl==="start date"?"sd":fl==="target completion"?"td":fl==="client phone"?"cphone":fl==="client email"?"cemail":fl==="description"?"desc":fl==="payment terms"?"pt":fl==="dl normal rate"?"dlNR":fl==="dl overtime rate"?"dlOT":"v";const found=pjRef.current.find(p=>p.nm===nm);const original=found?(found[prop]||""):"";
+const uP=useCallback(async(nm,fd,val)=>{markLocalEdit();const fl=fd.toLowerCase();const prop=fl.includes("contract")?"cp":fl.includes("job")?"jid":fl.includes("status")?"st":fl==="variations"?"v":fl==="coordinator"?"coord":fl==="project managers"?"pms":fl==="client"?"client":fl==="site manager"?"sm":fl==="address"?"addr":fl==="start date"?"sd":fl==="target completion"?"td":fl==="client phone"?"cphone":fl==="client email"?"cemail":fl==="ca name"?"caName":fl==="description"?"desc":fl==="payment terms"?"pt":fl==="dl normal rate"?"dlNR":fl==="dl overtime rate"?"dlOT":"v";const found=pjRef.current.find(p=>p.nm===nm);const original=found?(found[prop]||""):"";
 
 // Intercept Coordinator changes to detect removed coords with unpushed VOs
 if(prop==="coord"){
@@ -1133,7 +1151,7 @@ return<div className="pg" key={p.nm}>
 <div className="pr">
 <div className={hovOn&&hovR===p.nm?"rh":""} onMouseEnter={()=>hovOn&&sHR(p.nm)} onMouseLeave={()=>sHR(null)} style={{display:"flex",flexDirection:"column",gap:1,width:"100%"}}>
 <div style={{display:"flex",alignItems:"center",gap:2}}><button className="xb" onClick={()=>dPj(p.nm)}>×</button><EN value={p.nm} onSave={nw=>renP(p.nm,nw)} style={p.st==="Pending"?{color:"var(--rd)"}:{}}/></div>
-<div style={{display:"flex",alignItems:"center",gap:2,opacity:.7,transform:"scale(0.85)",transformOrigin:"left center"}}><button className="eb" onClick={()=>togExp(p.nm)}>{open?"−":"+"}</button><span className={"st-tag "+(p.st==="Live"?"st-live":p.st==="Pending"?"st-pend":p.st==="Awarded"?"st-awd":"st-done")} onClick={()=>uP(p.nm,"Status",p.st==="Pending"?"Awarded":p.st==="Awarded"?"Live":p.st==="Live"?"Completed":"Pending")}>{p.st==="Live"?"LIVE":p.st==="Pending"?"PENDING":p.st==="Awarded"?"AWARDED":"DONE"}</span><JidInput key={"jid_"+(p._v||0)} value={p.jid} onSave={v=>uP(p.nm,"Job ID",v)}/>{p.pt&&<span style={{fontSize:7,color:"#fff",background:"var(--ac)",fontWeight:700,padding:"1px 4px",borderRadius:3,fontWeight:600,whiteSpace:"nowrap"}} title={p.pt}>{p.pt}</span>}</div>
+<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:4,width:"100%"}}><div style={{display:"flex",alignItems:"center",gap:2,opacity:.7,transform:"scale(0.85)",transformOrigin:"left center"}}><button className="eb" onClick={()=>togExp(p.nm)}>{open?"−":"+"}</button><span className={"st-tag "+(p.st==="Live"?"st-live":p.st==="Pending"?"st-pend":p.st==="Awarded"?"st-awd":"st-done")} onClick={()=>uP(p.nm,"Status",p.st==="Pending"?"Awarded":p.st==="Awarded"?"Live":p.st==="Live"?"Completed":"Pending")}>{p.st==="Live"?"LIVE":p.st==="Pending"?"PENDING":p.st==="Awarded"?"AWARDED":"DONE"}</span><JidInput key={"jid_"+(p._v||0)} value={p.jid} onSave={v=>uP(p.nm,"Job ID",v)}/>{p.pt&&<span style={{fontSize:7,color:"#fff",background:"var(--ac)",fontWeight:700,padding:"1px 4px",borderRadius:3,fontWeight:600,whiteSpace:"nowrap"}} title={p.pt}>{p.pt}</span>}</div>{(()=>{const sales=Number(gv(p.nm,CUR_M,"Sales")||0);if(sales<=0)return null;const hasCA=String(p.cemail||"").trim()!==""&&String(p.caName||"").trim()!=="";return<button className={"email-btn"+(hasCA?"":" warn")} onClick={e=>{e.stopPropagation();sendClaimEmail(p)}} title={hasCA?"Email Contract Admin about "+CUR_M+" claim":"Missing CA info — fill in Project Settings first"}>{hasCA?"📧":"⚠️"}</button>})()}</div>
 </div>
 <div className={hovOn&&hovR===p.nm?"rh":""}><EC value={p.cp} onChange={v=>uP(p.nm,"Contract Price",v)} cls="cl ce" color={getCC(p.nm,"_","cp")} onContext={e=>openCM(e,p.nm,"_","cp")}/></div>
 <div className={hovOn&&hovR===p.nm?"rh":""}><EC value={p.v} onChange={v=>uP(p.nm,"Variations",v)} cls="cl ce" color={getCC(p.nm,"_","var")} onContext={e=>openCM(e,p.nm,"_","var")}/></div>
@@ -1327,7 +1345,7 @@ return<div className="pr pr-pf" key={p.nm}>
 <table className="vt" style={{width:settingsW.reduce((a,b)=>a+b,0)+"px",minWidth:settingsW.reduce((a,b)=>a+b,0)+"px"}}>
 <colgroup>{settingsW.map((w,i)=><col key={i} style={{width:w+"px"}}/>)}</colgroup>
 <thead><tr>
-{[{h:"",f:null},{h:"Project",f:"nm"},{h:"Job ID",f:"jid"},{h:"Status",f:"st"},{h:"Client",f:"client"},{h:"Coordinator",f:"coord"},{h:"Project Manager",f:"pms"},{h:"Site Manager",f:"sm"},{h:"Address",f:"addr"},{h:"Start Date",f:"sd"},{h:"Target Comp.",f:"td"},{h:"Phone",f:"cphone"},{h:"Email",f:"cemail"},{h:"Pay Terms",f:"pt"},{h:"DL NRate",f:"dlNR"},{h:"DL OTRate",f:"dlOT"},{h:"📝",f:null}].map((col,ci)=>{const isSorted=col.f&&settingsSortCol===col.f;const arrow=isSorted?(settingsSortDir==="asc"?" ▲":" ▼"):"";return<th key={col.h+"_"+ci} onClick={()=>{if(!col.f)return;if(settingsSortCol!==col.f){setSettingsSortCol(col.f);setSettingsSortDir("asc")}else if(settingsSortDir==="asc"){setSettingsSortDir("desc")}else{setSettingsSortCol(null);setSettingsSortDir(null)}}} style={{minWidth:40,position:"sticky",top:0,cursor:col.f?"pointer":"default",userSelect:"none",...(ci<3?{left:settingsW.slice(0,ci).reduce((a,b)=>a+b,0),zIndex:10,background:"#eef9f3"}:{zIndex:9,background:"#fff"}),borderRight:ci===2?"2px solid var(--bd)":undefined,padding:"4px 6px",fontSize:9,fontWeight:700,textAlign:[2,3,9,10,14,15,16].includes(ci)?"center":"left",whiteSpace:"nowrap"}}>{col.h}{arrow}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResizeS(ci,e)}}/>}</th>})}
+{[{h:"",f:null},{h:"Project",f:"nm"},{h:"Job ID",f:"jid"},{h:"Status",f:"st"},{h:"Client",f:"client"},{h:"Coordinator",f:"coord"},{h:"Project Manager",f:"pms"},{h:"Site Manager",f:"sm"},{h:"Address",f:"addr"},{h:"Start Date",f:"sd"},{h:"Target Comp.",f:"td"},{h:"CA Name",f:"caName"},{h:"Contract Admin Phone",f:"cphone"},{h:"Contract Admin Email",f:"cemail",hint:"multiple — separate with commas"},{h:"Pay Terms",f:"pt"},{h:"DL NRate",f:"dlNR"},{h:"DL OTRate",f:"dlOT"},{h:"📝",f:null}].map((col,ci)=>{const isSorted=col.f&&settingsSortCol===col.f;const arrow=isSorted?(settingsSortDir==="asc"?" ▲":" ▼"):"";return<th key={col.h+"_"+ci} onClick={()=>{if(!col.f)return;if(settingsSortCol!==col.f){setSettingsSortCol(col.f);setSettingsSortDir("asc")}else if(settingsSortDir==="asc"){setSettingsSortDir("desc")}else{setSettingsSortCol(null);setSettingsSortDir(null)}}} style={{minWidth:40,position:"sticky",top:0,cursor:col.f?"pointer":"default",userSelect:"none",...(ci<3?{left:settingsW.slice(0,ci).reduce((a,b)=>a+b,0),zIndex:10,background:"#eef9f3"}:{zIndex:9,background:"#fff"}),borderRight:ci===2?"2px solid var(--bd)":undefined,padding:"4px 6px",fontSize:9,fontWeight:700,textAlign:[2,3,9,10,15,16,17].includes(ci)?"center":"left",whiteSpace:"nowrap"}}>{col.h}{arrow}{col.hint&&<div style={{fontSize:7,fontWeight:400,fontStyle:"italic",color:"var(--t2)",marginTop:1,textTransform:"none",letterSpacing:0}}>{col.hint}</div>}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResizeS(ci,e)}}/>}</th>})}
 </tr></thead>
 <tbody>
 {(()=>{
@@ -1357,8 +1375,9 @@ return<div className="pr pr-pf" key={p.nm}>
 <td><DebText value={p.addr||""} onSave={v=>uP(p.nm,"Address",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.sd||""} onSave={v=>uP(p.nm,"Start Date",v)} format={fmD} placeholder="dd-mmm-yy" style={{width:"100%",textAlign:"center"}}/></td>
 <td><DebText value={p.td||""} onSave={v=>uP(p.nm,"Target Completion",v)} format={fmD} placeholder="dd-mmm-yy" style={{width:"100%",textAlign:"center"}}/></td>
+<td><DebText value={p.caName||""} onSave={v=>uP(p.nm,"CA Name",v)} style={{width:"100%"}}/></td>
 <td><DebText value={p.cphone||""} onSave={v=>uP(p.nm,"Client Phone",v)} style={{width:"100%"}}/></td>
-<td><DebText value={p.cemail||""} onSave={v=>uP(p.nm,"Client Email",v)} style={{width:"100%"}}/></td>
+<td><DebText value={p.cemail||""} onSave={v=>uP(p.nm,"Client Email",v)} placeholder="separate multiple with commas" style={{width:"100%"}}/></td>
 <td><DebText value={p.pt||""} onSave={v=>uP(p.nm,"Payment Terms",v)} style={{width:"100%"}}/></td>
 <td style={{textAlign:"center"}}><EC value={p.dlNR} onChange={val=>uP(p.nm,"DL Normal Rate",val)} cls="cl" style={{textAlign:"center"}} fmt={fmP}/></td>
 <td style={{textAlign:"center"}}><EC value={p.dlOT} onChange={val=>uP(p.nm,"DL Overtime Rate",val)} cls="cl" style={{textAlign:"center"}} fmt={fmP}/></td>
