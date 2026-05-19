@@ -648,9 +648,17 @@ const MO=months;
 const addMonth=()=>{const last=MO[MO.length-1];const ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const p=last.split("-");const mi=ms.indexOf(p[0]);const yr=parseInt(p[1]);const nm=mi===11?ms[0]+"-"+String(yr+1).padStart(2,"0"):ms[mi+1]+"-"+p[1];const nw=[...MO,nm];setMonths(nw);localStorage.setItem("pipeline-months",JSON.stringify(nw))};
 const[un,sU]=useState(localStorage.getItem(UK)||"");const[ni,sNi]=useState("");
 const[idCheck,setIdCheck]=useState(true);
+// Role state — used to enforce that only master users can access index.html.
+// Coords who try to log in get a blocking screen telling them to go to vo.html.
+const[roleBlocked,setRoleBlocked]=useState(false);
+const[roleIdentity,setRoleIdentity]=useState("");
 // On pp change, ask server for our enforced identity. If returned, lock it (no name prompt).
 // If null, fall back to manual name entry (shared TEAM_PASSPHRASE case).
-useEffect(()=>{if(!pp){setIdCheck(false);return}let cancelled=false;setIdCheck(true);fetch(API+"?action=getIdentity&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).then(r=>r.json()).then(d=>{if(cancelled)return;if(d&&d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp")}catch{};setPp("")}else if(d&&d.identity){sU(d.identity);try{localStorage.setItem(UK,d.identity)}catch{}};setIdCheck(false)}).catch(()=>{if(!cancelled)setIdCheck(false)});return()=>{cancelled=true}},[pp]);
+useEffect(()=>{if(!pp){setIdCheck(false);setRoleBlocked(false);return}let cancelled=false;setIdCheck(true);fetch(API+"?action=getIdentity&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).then(r=>r.json()).then(d=>{if(cancelled)return;if(d&&d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp")}catch{};setPp("")}else if(d&&d.identity){sU(d.identity);try{localStorage.setItem(UK,d.identity)}catch{};
+  // Role enforcement: index.html is master-only. If this passphrase is coord-only (isMaster=false),
+  // block access immediately. The user must use vo.html instead.
+  if(d.isMaster===false){setRoleBlocked(true);setRoleIdentity(d.identity||"")}else{setRoleBlocked(false)}
+};setIdCheck(false)}).catch(()=>{if(!cancelled)setIdCheck(false)});return()=>{cancelled=true}},[pp]);
 const unRef=useRef(un);unRef.current=un;
 const[ld,sLd]=useState(true);const[sv,sSv]=useState(false);const[ls,sLs]=useState(null);
 // sortVersion bumps only on full reload (load()). Pipeline sort key snapshot uses this so
@@ -1071,6 +1079,7 @@ const aSR=[{k:"_AS",n:"Subcontractors: Non Full-Time",g:"sub"},{k:"_AO",n:"Group
  
 if(!pp)return<div className="np"><div className="nc"><div style={{fontSize:40}}>🔒</div><h2>Team Access</h2><p>Please enter the team passphrase to continue.</p><input className="nin" type="password" placeholder="Team passphrase..." value={ppI} onChange={e=>setPpI(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&ppI.trim())submitPp()}} autoFocus/><button className="nbt" disabled={!ppI.trim()} onClick={submitPp}>Unlock →</button><div style={{marginTop:12,fontSize:10,color:"var(--t2)"}}>Ask your team admin if you don't have it.</div></div></div>;
 if(idCheck)return<div className="np"><div className="nc"><div style={{textAlign:"center",color:"var(--t2)",fontSize:12}}>Verifying access...</div></div></div>;
+if(roleBlocked)return<div className="np"><div className="nc" style={{maxWidth:440}}><div style={{fontSize:40}}>🚫</div><h2>Access Restricted</h2><p style={{lineHeight:1.5}}>This page is for <b>master users only</b>. You're logged in as <b>{roleIdentity||"a coordinator"}</b>, which has access to the Variation Register only.</p><p style={{lineHeight:1.5,marginTop:8}}>Please use the Variation Register instead.</p><div style={{display:"flex",gap:8,marginTop:16,justifyContent:"center"}}><button className="nbt" style={{background:"var(--ac)"}} onClick={()=>{const u=new URL(window.location.href);u.pathname=u.pathname.replace(/index(-test)?\.html$/,"vo$1.html").replace(/\/$/,"/vo.html");u.searchParams.set("user",roleIdentity);window.location.href=u.toString()}}>Go to Variation Register →</button><button className="nbt" style={{background:"var(--s2)",color:"var(--tx)"}} onClick={()=>{try{localStorage.removeItem("pipeline-pp");localStorage.removeItem(UK)}catch{};setPp("");setRoleBlocked(false);setRoleIdentity("")}}>Log out</button></div></div></div>;
 if(!un)return<div className="np"><div className="nc"><div style={{fontSize:40}}>👤</div><h2>Welcome</h2><p>Enter your name.</p><input className="nin" placeholder="Your name..." value={ni} onChange={e=>sNi(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&ni.trim())sub(ni.trim())}} autoFocus/><button className="nbt" disabled={!ni.trim()} onClick={()=>sub(ni.trim())}>Enter →</button></div></div>;
  
 // SAME column template as the working version: 7 fixed + 12 months = 19 cols
