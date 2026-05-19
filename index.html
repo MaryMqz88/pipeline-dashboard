@@ -875,7 +875,10 @@ const load=useCallback(async(silent)=>{
   });
   sLd(false)},[]);
  
-useEffect(()=>{if(un)load()},[un,load]);
+// Wait until role check completes AND user isn't blocked. Without this gate,
+// coord passphrases trigger getAll → AUTH_FAILED → load() clears pp and resets
+// to login screen, hiding the proper role-blocked message.
+useEffect(()=>{if(un&&!idCheck&&!roleBlocked)load()},[un,idCheck,roleBlocked,load]);
 const vwRef=useRef("grid");useEffect(()=>{vwRef.current=vw},[vw]);
 const coordUserRef=useRef("");useEffect(()=>{coordUserRef.current=coordUser},[coordUser]);
 // Tracks last local edit time. Realtime reload is deferred while edits happened recently,
