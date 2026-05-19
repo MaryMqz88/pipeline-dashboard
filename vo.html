@@ -198,9 +198,16 @@ const enq=fn=>{wqRef.current=wqRef.current.then(()=>fn()).then(r=>{if(r===false)
 const urlUser=new URLSearchParams(window.location.search).get("user")||"";
 const[identity,setIdentity]=useState(()=>localStorage.getItem("vo-identity")||"");
 const[idCheck,setIdCheck]=useState(true);
+// Role state — vo.html is coord-only. Masters who somehow land here get blocked.
+const[roleBlocked,setRoleBlocked]=useState(false);
+const[roleIdentity,setRoleIdentity]=useState("");
 // On pp change/mount, server tells us who we are. For coord passphrases identity is locked,
 // so it's impossible to impersonate another coord by typing their name in the prompt.
-useEffect(()=>{if(!pp){setIdCheck(false);return}let cancelled=false;setIdCheck(true);fetch(API+"?action=getIdentity&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).then(r=>r.json()).then(d=>{if(cancelled)return;if(d&&d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp-coord")}catch{};setPp("")}else if(d&&d.identity){setIdentity(d.identity);try{localStorage.setItem("vo-identity",d.identity)}catch{}};setIdCheck(false)}).catch(()=>{if(!cancelled)setIdCheck(false)});return()=>{cancelled=true}},[pp]);
+useEffect(()=>{if(!pp){setIdCheck(false);setRoleBlocked(false);return}let cancelled=false;setIdCheck(true);fetch(API+"?action=getIdentity&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).then(r=>r.json()).then(d=>{if(cancelled)return;if(d&&d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp-coord")}catch{};setPp("")}else if(d&&d.identity){setIdentity(d.identity);try{localStorage.setItem("vo-identity",d.identity)}catch{};
+  // Role enforcement: vo.html is coord-only. If this passphrase is master-only (isCoord=false), block.
+  // Dual-role passphrases (isMaster=true AND isCoord=true) pass through fine.
+  if(d.isCoord===false){setRoleBlocked(true);setRoleIdentity(d.identity||"")}else{setRoleBlocked(false)}
+};setIdCheck(false)}).catch(()=>{if(!cancelled)setIdCheck(false)});return()=>{cancelled=true}},[pp]);
 const[user,setUser]=useState(urlUser);
 const[vo,sVo]=useState([]);
 const[pj,sPj]=useState([]);
@@ -243,8 +250,9 @@ async function aP(p){try{const pp=getPP();const body={...p};if(pp)body.passphras
 const load=useCallback(async(silent)=>{if(!silent)sLd(true);sEr(null);try{const pp=getPP();const r=await fetch(API+"?action=getVariations&user="+encodeURIComponent(user)+(pp?"&passphrase="+encodeURIComponent(pp):""));const d=await r.json();if(d.error){if(d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp-coord")}catch{};setPp("");sEr("Wrong coordinator passphrase. Please re-enter.");sLd(false);return}sEr(d.error);sLd(false);return}
 const vD=d.variations||d.vos||[];
 if(d.allProjectStatuses)setAllProjStatuses(d.allProjectStatuses);
-// Project list comes from a separate getAll call so the +Add picker has all options.
-let pD=[];try{const r2=await fetch(API+"?action=getAll"+(pp?"&passphrase="+encodeURIComponent(pp):""));const d2=await r2.json();if(d2&&!d2.error)pD=d2.projects||[]}catch{}
+// Project list comes from a separate lightweight call (just id, name, coordinator, status)
+// so the +Add picker has all options. Doesn't expose master pipeline data to coords.
+let pD=[];try{const r2=await fetch(API+"?action=getProjectsList"+(pp?"&passphrase="+encodeURIComponent(pp):""));const d2=await r2.json();if(d2&&!d2.error)pD=d2.projects||[]}catch{}
 // Filter projects to those assigned to the current coord (or "all"). Hides system projects starting with _.
 const isCoordAssigned=(coordField,coord)=>{
   if(!coordField)return false;
@@ -388,6 +396,7 @@ if(!pp)return<div className="np"><div style={{textAlign:"center"}}><div style={{
 </div></div>;
 
 if(idCheck)return<div className="np"><div style={{textAlign:"center",color:"var(--t2)",fontSize:12}}>Verifying access...</div></div>;
+if(roleBlocked)return<div className="np"><div style={{maxWidth:440,textAlign:"center"}}><div style={{fontSize:40}}>🚫</div><h2 style={{marginBottom:12}}>Access Restricted</h2><p style={{lineHeight:1.5,color:"var(--tx)"}}>This page is the <b>Variation Register for coordinators</b>. You're logged in as <b>{roleIdentity||"a master user"}</b>, which has access to the main Pipeline view.</p><p style={{lineHeight:1.5,marginTop:8,color:"var(--tx)"}}>Please use the Pipeline view instead.</p><div style={{display:"flex",gap:8,marginTop:16,justifyContent:"center"}}><button style={{padding:"10px 20px",fontSize:13,fontWeight:700,fontFamily:"var(--ft)",background:"var(--ac)",color:"#fff",border:"none",borderRadius:6,cursor:"pointer"}} onClick={()=>{const u=new URL(window.location.href);u.pathname=u.pathname.replace(/vo(-test)?\.html$/,"index$1.html");u.search="";window.location.href=u.toString()}}>Go to Pipeline →</button><button style={{padding:"10px 20px",fontSize:13,fontWeight:700,fontFamily:"var(--ft)",background:"var(--s2)",color:"var(--tx)",border:"1px solid var(--bd)",borderRadius:6,cursor:"pointer"}} onClick={()=>{try{localStorage.removeItem("pipeline-pp-coord");localStorage.removeItem("vo-identity")}catch{};setPp("");setIdentity("");setRoleBlocked(false);setRoleIdentity("")}}>Log out</button></div></div></div>;
 if(!identity)return<div className="np"><div style={{textAlign:"center"}}><h2 style={{marginBottom:12}}>Who are you?</h2>
 <p style={{color:"var(--t2)",fontSize:11,marginBottom:12}}>This is saved so we know who made changes.</p>
 {USERS.map(u=><button key={u} onClick={()=>{setIdentity(u);localStorage.setItem("vo-identity",u);if(!user)setUser(u)}} style={{display:"block",margin:"6px auto",padding:"10px 40px",fontSize:14,fontWeight:700,fontFamily:"var(--ft)",background:"var(--ac)",color:"#fff",border:"none",borderRadius:6,cursor:"pointer"}}>{u}</button>)}
