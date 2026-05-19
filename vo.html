@@ -294,7 +294,7 @@ ea:String(F(v,"EditedAt","EDITED AT")||"")
 })));
 sLd(false)}catch(e){sEr("Failed to connect: "+e.message);sLd(false)}},[user]);
 
-useEffect(()=>{if(user)load()},[user,load]);
+useEffect(()=>{if(user&&pp)load()},[user,pp,load]);
 // Heartbeat: ping every 60s while logged in (lock-free on server)
 useEffect(()=>{if(!identity||!pp)return;const ping=()=>{fetch(API+"?action=heartbeat&user="+encodeURIComponent(identity)+"&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).catch(()=>{})};ping();const id=setInterval(ping,60000);return()=>clearInterval(id)},[identity,pp]);
 // Realtime: subscribe to DB changes via websocket and silently refresh on any change.
