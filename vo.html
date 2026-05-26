@@ -123,13 +123,14 @@ const API="https://gqcemmuntzddkdwzqenq.supabase.co/functions/v1/api";
 const SUPABASE_URL="https://gqcemmuntzddkdwzqenq.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxY2VtbXVudHpkZGtkd3pxZW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTg1NjIsImV4cCI6MjA5MzY5NDU2Mn0.NwyQC3dmI6LQTLEHzDLaQLv274LcjKag1Zzgssf11aQ";
 
-const USERS=["Luka","Lizzie","Lachlan"];
+const USERS=["Luka","Lizzie","Lachlan","Daniel"];
 const coordDisplay=name=>name==="Lachlan"?"Lachie":name;
 const coordColor=name=>{
   const n=String(name||"");
   if(n==="Luka")    return {bg:"#e8f5ed",border:"#a8d4b6",text:"#3a4252"};
   if(n==="Lizzie")  return {bg:"#fef5d8",border:"#e8d896",text:"#3a4252"};
   if(n==="Lachlan") return {bg:"#fde9d4",border:"#f0c499",text:"#3a4252"};
+  if(n==="Daniel")  return {bg:"#e3edfb",border:"#a9c5ec",text:"#3a4252"};
   return {bg:"#f0f3f7",border:"#cbd5e1",text:"#3a4252"};
 };
 
