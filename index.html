@@ -376,7 +376,7 @@ const DEF_MO=["Jan-25","Feb-25","Mar-25","Apr-25","May-25","Jun-25","Jul-25","Au
 const RN=["External Materials","ProFab Materials","Other Costs"];
 const RK=["ExtMaterials","ProfabMaterials","OtherCosts"];
 const UK="pipeline-v9";
-const COORDS=["Luka","Lizzie","Lachlan"];
+const COORDS=["Luka","Lizzie","Lachlan","Daniel"];
 // Display name override: render "Lachlan" as "Lachie" in UI. DB still uses "Lachlan".
 const coordDisplay=name=>name==="Lachlan"?"Lachie":name;
 // Per-coord chip/badge colors. Light backgrounds, soft text. {bg, border, text}.
@@ -385,6 +385,7 @@ const coordColor=name=>{
   if(n==="Luka")    return {bg:"#e8f5ed",border:"#a8d4b6",text:"#3a4252"};   // light green
   if(n==="Lizzie")  return {bg:"#fef5d8",border:"#e8d896",text:"#3a4252"};  // light yellow
   if(n==="Lachlan") return {bg:"#fde9d4",border:"#f0c499",text:"#3a4252"};  // light orange
+  if(n==="Daniel")  return {bg:"#e3edfb",border:"#a9c5ec",text:"#3a4252"};  // light blue
   return {bg:"#f0f3f7",border:"#cbd5e1",text:"#3a4252"};
 };
 const NOW=new Date();const CUR_M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][NOW.getMonth()]+"-"+String(NOW.getFullYear()).slice(2);
