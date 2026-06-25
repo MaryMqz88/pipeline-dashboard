@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Variation Register</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -34,13 +34,11 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 /* VO Table */
 .vw{background:#fff;border:none;margin:0;padding:0;flex:1;min-height:0;display:flex;flex-direction:column}
 .vhd{padding:4px 10px;background:var(--s2);border-bottom:2px solid var(--bd);display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-shrink:0}
-.vsc{overflow:auto;flex:1;min-height:0}
-.vt{width:100%;border-collapse:separate;border-spacing:0;font-size:10px;font-family:var(--mn);table-layout:fixed}
+.vsc{overflow:auto;flex:1;min-height:0;will-change:transform}
+.vt{width:100%;border-collapse:separate;border-spacing:0;font-size:10px;font-family:var(--mn);table-layout:fixed;contain:paint}
 .vt th{text-align:center;padding:6px 8px;font-size:9px;color:var(--tx);font-weight:700;border:1px solid var(--bd);background:var(--s2);position:sticky;top:0;z-index:1;white-space:nowrap;position:relative}
 .vt th.tg{background:#e8f5e9;color:#2e7d32}.vt th.ty{background:#fff8e1;color:#f57f17}.vt th.tp{background:#f3e5f5;color:#7b1fa2}
 .vt td{padding:4px 8px;border:1px solid var(--bd);background:#fff}
-/* Browser-level virtualization — skips rendering rows outside the viewport */
-.vt tbody tr{content-visibility:auto;contain-intrinsic-size:auto 24px}
 .vt tr:nth-child(even) td{background:#f8f9fb!important}
 .vt tr:hover td{background:rgba(68,114,196,.10)!important}
 .vt input,.vt select{background:transparent;border:none;color:var(--tx);padding:2px 0;font-family:var(--mn);font-size:10px;outline:none;width:100%;box-sizing:border-box}
@@ -103,7 +101,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .vo-card .lb{font-size:8px;color:var(--t2);text-transform:uppercase;font-weight:700;letter-spacing:.3px}
 .vo-card .vl{font-size:16px;font-weight:800;margin-top:2px}
 /* Project cards grid (home view) */
-.pj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:10px;overflow-y:auto;flex:1;min-height:0;align-content:start}
+.pj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));grid-auto-rows:max-content;gap:10px;padding:10px;overflow-y:auto;flex:1;min-height:0;align-content:start}
 .pj-card{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:12px 14px;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
 .pj-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-accent,var(--bd))}
 .pj-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:var(--ac)}
@@ -125,7 +123,16 @@ const API="https://gqcemmuntzddkdwzqenq.supabase.co/functions/v1/api";
 const SUPABASE_URL="https://gqcemmuntzddkdwzqenq.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxY2VtbXVudHpkZGtkd3pxZW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTg1NjIsImV4cCI6MjA5MzY5NDU2Mn0.NwyQC3dmI6LQTLEHzDLaQLv274LcjKag1Zzgssf11aQ";
 
-const USERS=["Luka","Lizzie","Lachlan"];
+const USERS=["Luka","Lizzie","Lachlan","Daniel"];
+const coordDisplay=name=>name==="Lachlan"?"Lachie":name;
+const coordColor=name=>{
+  const n=String(name||"");
+  if(n==="Luka")    return {bg:"#e8f5ed",border:"#a8d4b6",text:"#3a4252"};
+  if(n==="Lizzie")  return {bg:"#fef5d8",border:"#e8d896",text:"#3a4252"};
+  if(n==="Lachlan") return {bg:"#fde9d4",border:"#f0c499",text:"#3a4252"};
+  if(n==="Daniel")  return {bg:"#e3edfb",border:"#a9c5ec",text:"#3a4252"};
+  return {bg:"#f0f3f7",border:"#cbd5e1",text:"#3a4252"};
+};
 
 function fmP(v){if(!v&&v!==0)return"";return"$"+Number(v).toLocaleString("en-AU",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmN(v){if(!v&&v!==0)return"";return Math.round(Number(v)).toLocaleString("en-AU")}
@@ -149,7 +156,7 @@ const matchStatus=(voSt,pillV)=>{
   const key=pillV.toLowerCase().split(" - ")[0].split(" ")[0];
   return String(voSt).toLowerCase().includes(key);
 };
-const SKIP_PJ=/^(extra\s*sales|day\s*lab[ou]r)$/i;
+const SKIP_PJ=/^(extra\s*sales|day\s*lab[ou]r|extra\s*sales\s*\/\s*day\s*lab[ou]r(\s*\/\s*avg\s*monthly\s*variation)?)$/i;
 const isRealProject=nm=>nm&&!nm.startsWith("_")&&!SKIP_PJ.test(nm);
 const stripeColor=st=>st==="Pending"?"#d9534f":st==="Awarded"?"#3a8dde":st==="Live"?"#1a9a6b":st==="Completed"?"#9ca3af":"#cbd5e1";
 const COL_FIELD={"":null,"☐":null,"Project":"pj","Area on Job":"area","Type":"ty","Var No.":"vn","Sub Ref No.":"srn","Name":"vnm","Date Sub.":"ds","Date Appr.":"da","Price":"pr","Claim %":"claim","Status":"st","Ext.Mat":"em","PFAB":"pf","Margin":null,"#Men":"nmn","NHrs":"nh","NRate":"nr","OTHrs":"oh","OTRate":"or2","Notes":"notes","Push":null};
@@ -192,12 +199,20 @@ const enq=fn=>{wqRef.current=wqRef.current.then(()=>fn()).then(r=>{if(r===false)
 const urlUser=new URLSearchParams(window.location.search).get("user")||"";
 const[identity,setIdentity]=useState(()=>localStorage.getItem("vo-identity")||"");
 const[idCheck,setIdCheck]=useState(true);
+// Role state — vo.html is coord-only. Masters who somehow land here get blocked.
+const[roleBlocked,setRoleBlocked]=useState(false);
+const[roleIdentity,setRoleIdentity]=useState("");
 // On pp change/mount, server tells us who we are. For coord passphrases identity is locked,
 // so it's impossible to impersonate another coord by typing their name in the prompt.
-useEffect(()=>{if(!pp){setIdCheck(false);return}let cancelled=false;setIdCheck(true);fetch(API+"?action=getIdentity&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).then(r=>r.json()).then(d=>{if(cancelled)return;if(d&&d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp-coord")}catch{};setPp("")}else if(d&&d.identity){setIdentity(d.identity);try{localStorage.setItem("vo-identity",d.identity)}catch{}};setIdCheck(false)}).catch(()=>{if(!cancelled)setIdCheck(false)});return()=>{cancelled=true}},[pp]);
+useEffect(()=>{if(!pp){setIdCheck(false);setRoleBlocked(false);return}let cancelled=false;setIdCheck(true);fetch(API+"?action=getIdentity&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).then(r=>r.json()).then(d=>{if(cancelled)return;if(d&&d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp-coord")}catch{};setPp("")}else if(d&&d.identity){setIdentity(d.identity);try{localStorage.setItem("vo-identity",d.identity)}catch{};
+  // Role enforcement: vo.html is coord-only. If this passphrase is master-only (isCoord=false), block.
+  // Dual-role passphrases (isMaster=true AND isCoord=true) pass through fine.
+  if(d.isCoord===false){setRoleBlocked(true);setRoleIdentity(d.identity||"")}else{setRoleBlocked(false)}
+};setIdCheck(false)}).catch(()=>{if(!cancelled)setIdCheck(false)});return()=>{cancelled=true}},[pp]);
 const[user,setUser]=useState(urlUser);
 const[vo,sVo]=useState([]);
 const[pj,sPj]=useState([]);
+const[allProjStatuses,setAllProjStatuses]=useState({});
 const[ld,sLd]=useState(true);
 const[sv,sSv]=useState(false);
 const[er,sEr]=useState(null);
@@ -235,8 +250,10 @@ async function aP(p){try{const pp=getPP();const body={...p};if(pp)body.passphras
 
 const load=useCallback(async(silent)=>{if(!silent)sLd(true);sEr(null);try{const pp=getPP();const r=await fetch(API+"?action=getVariations&user="+encodeURIComponent(user)+(pp?"&passphrase="+encodeURIComponent(pp):""));const d=await r.json();if(d.error){if(d.error==="AUTH_FAILED"){try{localStorage.removeItem("pipeline-pp-coord")}catch{};setPp("");sEr("Wrong coordinator passphrase. Please re-enter.");sLd(false);return}sEr(d.error);sLd(false);return}
 const vD=d.variations||d.vos||[];
-// Project list comes from a separate getAll call so the +Add picker has all options.
-let pD=[];try{const r2=await fetch(API+"?action=getAll"+(pp?"&passphrase="+encodeURIComponent(pp):""));const d2=await r2.json();if(d2&&!d2.error)pD=d2.projects||[]}catch{}
+if(d.allProjectStatuses)setAllProjStatuses(d.allProjectStatuses);
+// Project list comes from a separate lightweight call (just id, name, coordinator, status)
+// so the +Add picker has all options. Doesn't expose master pipeline data to coords.
+let pD=[];try{const r2=await fetch(API+"?action=getProjectsList"+(pp?"&passphrase="+encodeURIComponent(pp):""));const d2=await r2.json();if(d2&&!d2.error)pD=d2.projects||[]}catch{}
 // Filter projects to those assigned to the current coord (or "all"). Hides system projects starting with _.
 const isCoordAssigned=(coordField,coord)=>{
   if(!coordField)return false;
@@ -278,7 +295,7 @@ ea:String(F(v,"EditedAt","EDITED AT")||"")
 })));
 sLd(false)}catch(e){sEr("Failed to connect: "+e.message);sLd(false)}},[user]);
 
-useEffect(()=>{if(user)load()},[user,load]);
+useEffect(()=>{if(user&&pp)load()},[user,pp,load]);
 // Heartbeat: ping every 60s while logged in (lock-free on server)
 useEffect(()=>{if(!identity||!pp)return;const ping=()=>{fetch(API+"?action=heartbeat&user="+encodeURIComponent(identity)+"&passphrase="+encodeURIComponent(pp)+"&t="+Date.now()).catch(()=>{})};ping();const id=setInterval(ping,60000);return()=>clearInterval(id)},[identity,pp]);
 // Realtime: subscribe to DB changes via websocket and silently refresh on any change.
@@ -300,10 +317,10 @@ useEffect(()=>{if(!actOpen)return;let cancelled=false;const refresh=async()=>{tr
 const tAgo=(ts)=>{if(!ts)return"";const d=Date.now()-new Date(ts).getTime();if(d<60000)return"just now";if(d<3600000)return Math.floor(d/60000)+" min ago";if(d<86400000)return Math.floor(d/3600000)+"h ago";return Math.floor(d/86400000)+"d ago"};
 
 const calcDLPrice=(v,fd,val)=>{const u={...v,[fd]:val};const m=N(u.nmn)||1;return(m*N(u.nh)*N(u.nr))+(m*N(u.oh)*N(u.or2))};
-const uV=useCallback(async(vi,fd,val)=>{const v=vo[vi];if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
+const uV=useCallback(async(vid,fd,val)=>{const v=vo.find(x=>x.vid===vid);if(!v)return;if(v._pending){alert("⏳ This VO is still saving.\n\nPlease wait a few seconds for it to finish, then try editing.");return}
 // Status revert warning: changing FROM Fully/Partially Claimed
 if(fd==="st"){const oldStL=String(v.st||"").toLowerCase();if((oldStL.includes("fully claimed")||oldStL.includes("partially claimed"))&&val!==v.st){if(!confirm("⚠️ Please double check.\n\nThis VO is currently marked \""+v.st+"\". Are you sure you want to change it to \""+val+"\"?\n\nReverting a claimed status can affect the audit trail."))return}}
-const autoP=v.ty==="DL"&&["nmn","nh","nr","oh","or2"].includes(fd);const newPr=autoP?calcDLPrice(v,fd,val):null;sVo(pr=>pr.map((x,i)=>i===vi?{...x,[fd]:val,...(autoP?{pr:newPr}:{}),ea:new Date().toISOString()}:x));
+const autoP=v.ty==="DL"&&["nmn","nh","nr","oh","or2"].includes(fd);const newPr=autoP?calcDLPrice(v,fd,val):null;sVo(pr=>pr.map(x=>x.vid===vid?{...x,[fd]:val,...(autoP?{pr:newPr}:{}),ea:new Date().toISOString()}:x));
 const m2={"pj":"PROJECT","area":"AREA ON JOB","ty":"TYPE","vn":"VARIATION NO.","srn":"SUB REF NO.","vnm":"VARIATION NAME","ds":"DATE SUBMITTED","da":"DATE APPROVED","pr":"PRICE","claim":"CLAIM %","st":"STATUS","em":"EXTERNAL MATERIALS","pf":"PFAB MATERIALS","nmn":"NO. OF MEN","nh":"NORMAL HOURS","nr":"NORMAL RATE","oh":"OVERTIME HOURS","or2":"OVERTIME RATE","notes":"NOTES"};
 sSv(true);await enq(()=>aP({action:"updateVariation",voId:v.vid,field:m2[fd]||fd,value:val,editedBy:identity,editedAt:new Date().toLocaleString("en-AU")}));if(autoP)await enq(()=>aP({action:"updateVariation",voId:v.vid,field:"PRICE",value:newPr,editedBy:identity,editedAt:new Date().toLocaleString("en-AU")}));sSv(false)},[vo,user,identity]);
 
@@ -339,10 +356,8 @@ const voFilt=useMemo(()=>{
   }
   if(filtTy_d!=="all")f=f.filter(v=>v.ty===filtTy_d);
   if(filtSt_d.length>0)f=f.filter(v=>filtSt_d.some(s=>matchStatus(v.st,s)));
-  return f.slice().sort((a,b)=>{
-    if(sortCol)return cmp(a,b,sortCol,sortDir||"asc");
-    const ad=dsToTs(a.ds),bd=dsToTs(b.ds);if(!ad&&bd)return -1;if(ad&&!bd)return 1;return bd-ad
-  })
+  if(sortCol)return f.slice().sort((a,b)=>cmp(a,b,sortCol,sortDir||"asc"));
+  return f
 },[vo,voView,selectedProject,selectedStatusOnly,filtPj_d,filtTy_d,filtSt_d,sortCol,sortDir]);
 
 // Project cards: only projects that have VOs. Excludes system + pipeline categories.
@@ -351,14 +366,14 @@ const projectCards=useMemo(()=>{
   const grouped=new Map();
   vo.forEach(v=>{
     if(!isRealProject(v.pj))return;
-    if(!grouped.has(v.pj))grouped.set(v.pj,{name:v.pj,vos:0,total:0,statusCounts:{},projectStatus:pjByName.get(v.pj)||"Live"});
+    if(!grouped.has(v.pj))grouped.set(v.pj,{name:v.pj,vos:0,total:0,statusCounts:{},projectStatus:pjByName.get(v.pj)||allProjStatuses[v.pj]||"Live"});
     const g=grouped.get(v.pj);
     g.vos++;
     g.total+=Number(v.pr)||0;
     VO_ST.forEach(s=>{if(matchStatus(v.st,s.v))g.statusCounts[s.v]=(g.statusCounts[s.v]||0)+1});
   });
   return Array.from(grouped.values()).sort((a,b)=>a.name.localeCompare(b.name));
-},[vo,pj]);
+},[vo,pj,allProjStatuses]);
 
 const filteredCards=useMemo(()=>{
   if(!filtPj_d)return projectCards;
@@ -369,7 +384,7 @@ const filteredCards=useMemo(()=>{
 // Status counts: scope to selected project when in project view (so detail page shows project-only counts)
 const stCnt=useMemo(()=>{const o={};VO_ST.forEach(s=>{o[s.v]=vo.filter(v=>{if(!isRealProject(v.pj))return false;if(voView==="project"&&selectedProject&&v.pj!==selectedProject)return false;const tyM=filtTy==="all"||v.ty===filtTy;return tyM&&matchStatus(v.st,s.v)}).length});return o},[vo,voView,selectedProject,filtTy]);
 
-const goHome=()=>{setVoView("home");setSelectedProject(null);setSelectedStatusOnly(null);setFiltSt([]);setFiltTy("all")};
+const goHome=()=>{setVoView("home");setSelectedProject(null);setSelectedStatusOnly(null);setFiltSt([]);setFiltTy("all");setFiltPj("")};
 
 const apCount=voFilt.filter(v=>{const u=String(v.st).toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")}).length;
 const apTotal=voFilt.filter(v=>{const u=String(v.st).toLowerCase();return u.includes("fully claimed")||u.includes("partially claimed")||u.includes("accepted")}).reduce((s,v)=>s+(Number(v.pr)||0),0);
@@ -382,6 +397,7 @@ if(!pp)return<div className="np"><div style={{textAlign:"center"}}><div style={{
 </div></div>;
 
 if(idCheck)return<div className="np"><div style={{textAlign:"center",color:"var(--t2)",fontSize:12}}>Verifying access...</div></div>;
+if(roleBlocked)return<div className="np"><div style={{maxWidth:440,textAlign:"center"}}><div style={{fontSize:40}}>🚫</div><h2 style={{marginBottom:12}}>Access Restricted</h2><p style={{lineHeight:1.5,color:"var(--tx)"}}>This page is the <b>Variation Register for coordinators</b>. You're logged in as <b>{roleIdentity||"a master user"}</b>, which has access to the main Pipeline view.</p><p style={{lineHeight:1.5,marginTop:8,color:"var(--tx)"}}>Please use the Pipeline view instead.</p><div style={{display:"flex",gap:8,marginTop:16,justifyContent:"center"}}><button style={{padding:"10px 20px",fontSize:13,fontWeight:700,fontFamily:"var(--ft)",background:"var(--ac)",color:"#fff",border:"none",borderRadius:6,cursor:"pointer"}} onClick={()=>{const u=new URL(window.location.href);u.pathname=u.pathname.replace(/vo(-test)?\.html$/,"index$1.html");u.search="";window.location.href=u.toString()}}>Go to Pipeline →</button><button style={{padding:"10px 20px",fontSize:13,fontWeight:700,fontFamily:"var(--ft)",background:"var(--s2)",color:"var(--tx)",border:"1px solid var(--bd)",borderRadius:6,cursor:"pointer"}} onClick={()=>{try{localStorage.removeItem("pipeline-pp-coord");localStorage.removeItem("vo-identity")}catch{};setPp("");setIdentity("");setRoleBlocked(false);setRoleIdentity("")}}>Log out</button></div></div></div>;
 if(!identity)return<div className="np"><div style={{textAlign:"center"}}><h2 style={{marginBottom:12}}>Who are you?</h2>
 <p style={{color:"var(--t2)",fontSize:11,marginBottom:12}}>This is saved so we know who made changes.</p>
 {USERS.map(u=><button key={u} onClick={()=>{setIdentity(u);localStorage.setItem("vo-identity",u);if(!user)setUser(u)}} style={{display:"block",margin:"6px auto",padding:"10px 40px",fontSize:14,fontWeight:700,fontFamily:"var(--ft)",background:"var(--ac)",color:"#fff",border:"none",borderRadius:6,cursor:"pointer"}}>{u}</button>)}
@@ -389,11 +405,11 @@ if(!identity)return<div className="np"><div style={{textAlign:"center"}}><h2 sty
 
 if(!user)return<div className="np"><div style={{textAlign:"center"}}><h2 style={{marginBottom:12}}>Select Register</h2>
 <p style={{color:"var(--t2)",fontSize:11,marginBottom:12}}>Logged in as <b>{identity}</b></p>
-{USERS.map(u=><button key={u} onClick={()=>{setUser(u);window.history.replaceState(null,"","?user="+u)}} style={{display:"block",margin:"6px auto",padding:"10px 40px",fontSize:14,fontWeight:700,fontFamily:"var(--ft)",background:"var(--ac)",color:"#fff",border:"none",borderRadius:6,cursor:"pointer"}}>{u}</button>)}
+{USERS.map(u=>{const c=coordColor(u);return<button key={u} onClick={()=>{setUser(u);window.history.replaceState(null,"","?user="+u)}} style={{display:"block",margin:"8px auto",padding:"10px 20px",width:160,fontSize:14,fontWeight:700,fontFamily:"var(--ft)",background:c.bg,color:c.text,border:"1px solid "+c.border,borderRadius:8,cursor:"pointer",transition:"transform .1s ease, box-shadow .1s ease"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 3px 8px rgba(0,0,0,0.08)"}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=""}}>{coordDisplay(u)}</button>})}
 </div></div>;
 
 return<div className="app" onClick={e=>{if(e.target.closest('button,input,select,a,textarea'))return;const el=e.target.closest('.cl')||e.target;const txt=(el.textContent||'').replace(/[$,]/g,'').trim();const v=parseFloat(txt);if(!isNaN(v)&&v!==0&&txt.length<15){if(e.ctrlKey||e.metaKey){setSelCells(prev=>[...prev,v])}else{setSelCells([v])}}}}>
-<div className="hd"><div className="hl"><h1>Variation Register — {user}</h1>{user!==identity&&<span style={{fontSize:9,color:"var(--am)",fontWeight:700,marginLeft:4}}>(edited by {identity})</span>}<span className="dot" style={{background:saveErr?"#d9534f":sv?"var(--am)":"var(--gn)"}}/><span className="dx" style={{color:saveErr?"#d9534f":sv?"var(--am)":"var(--gn)",cursor:saveErr?"pointer":"default",fontWeight:saveErr?700:400}} onClick={saveErr?()=>{setSaveErr(null);load()}:undefined} title={saveErr||""}>{saveErr?"⚠ Save failed - click to retry":sv?"Saving...":"Connected"}</span></div>
+<div className="hd"><div className="hl"><h1>Variation Register — {coordDisplay(user)}</h1>{user!==identity&&<span style={{fontSize:9,color:"var(--am)",fontWeight:700,marginLeft:4}}>(edited by {identity})</span>}<span className="dot" style={{background:saveErr?"#d9534f":sv?"var(--am)":"var(--gn)"}}/><span className="dx" style={{color:saveErr?"#d9534f":sv?"var(--am)":"var(--gn)",cursor:saveErr?"pointer":"default",fontWeight:saveErr?700:400}} onClick={saveErr?()=>{setSaveErr(null);load()}:undefined} title={saveErr||""}>{saveErr?"⚠ Save failed - click to retry":sv?"Saving...":"Connected"}</span></div>
 <div style={{display:"flex",gap:4}}><button className="act-btn" onClick={()=>setActOpen(true)} title="Recent edits across the team">📋 Activity</button><button className="rb" onClick={()=>setUser("")}>Switch Register</button><span style={{fontSize:9,color:"var(--t2)"}}>👤 {identity}</span></div></div>
 {/* ACTIVITY PANEL */}
 <div className={"act-overlay"+(actOpen?" open":"")} onClick={()=>setActOpen(false)}/>
@@ -424,13 +440,13 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
 </div>
 <div style={{display:"flex",alignItems:"center",gap:6}}>
 {(voView==="project"||voView==="home")&&<button className="pl gn" onClick={()=>{if(voView==="project")sNvo({...nvo,project:selectedProject});else sNvo({...nvo,project:""});sSa(!sa)}}>{sa?"Cancel":"+ Add VO"}</button>}
-{selRows.size>0&&voView==="project"&&<select defaultValue="" onChange={async e=>{const newStatus=e.target.value;e.target.value="";if(!newStatus)return;if(!confirm("Change status to \""+newStatus+"\" for "+selRows.size+" selected VOs?"))return;sSv(true);const editedAt=new Date().toLocaleString("en-AU");for(const r of selRows){const v=vo.find(x=>x._r===r);if(v&&v.vid&&!v.vid.startsWith("vo_pending_")){sVo(prev=>prev.map(x=>x._r===r?{...x,st:newStatus,eb:identity,ea:editedAt}:x));await enq(()=>aP({action:"updateVariation",voId:v.vid,field:"STATUS",value:newStatus,editedBy:identity,editedAt}))}}setSelRows(new Set());sSv(false)}} style={{padding:"3px 6px",fontSize:10,borderRadius:4,border:"1px solid var(--ac)",cursor:"pointer",background:"#fff",color:"var(--ac)",fontFamily:"var(--ft)",fontWeight:600}}><option value="">Set Status ({selRows.size})...</option>{VO_ST.filter(s=>s.v!=="(blank)").map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select>}
-{selRows.size>0&&voView==="project"&&<button className="pl gn" onClick={async()=>{if(!confirm("Push "+selRows.size+" selected VOs to Master?"))return;sSv(true);const now=new Date().toISOString();for(const r of selRows){const v=vo.find(x=>x._r===r);if(v){sVo(prev=>prev.map(x=>(v.vid?x.vid===v.vid:x._r===r)?{...x,pushedAt:now,pushedBy:identity}:x));await enq(()=>aP({action:"pushVariation",voId:v.vid}))}}setSelRows(new Set());sSv(false)}}>{selRows.size} Push Selected</button>}
+{selRows.size>0&&voView==="project"&&<select defaultValue="" onChange={async e=>{const newStatus=e.target.value;e.target.value="";if(!newStatus)return;if(!confirm("Change status to \""+newStatus+"\" for "+selRows.size+" selected VOs?"))return;sSv(true);const editedAt=new Date().toLocaleString("en-AU");for(const r of selRows){const v=vo.find(x=>x.vid===r);if(v&&v.vid&&!v.vid.startsWith("vo_pending_")){sVo(prev=>prev.map(x=>x.vid===r?{...x,st:newStatus,eb:identity,ea:editedAt}:x));await enq(()=>aP({action:"updateVariation",voId:v.vid,field:"STATUS",value:newStatus,editedBy:identity,editedAt}))}}setSelRows(new Set());sSv(false)}} style={{padding:"3px 6px",fontSize:10,borderRadius:4,border:"1px solid var(--ac)",cursor:"pointer",background:"#fff",color:"var(--ac)",fontFamily:"var(--ft)",fontWeight:600}}><option value="">Set Status ({selRows.size})...</option>{VO_ST.filter(s=>s.v!=="(blank)").map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select>}
+{selRows.size>0&&voView==="project"&&<button className="pl gn" onClick={async()=>{if(!confirm("Push "+selRows.size+" selected VOs to Master?"))return;sSv(true);const now=new Date().toISOString();for(const r of selRows){const v=vo.find(x=>x.vid===r);if(v){sVo(prev=>prev.map(x=>(v.vid?x.vid===v.vid:x._r===r)?{...x,pushedAt:now,pushedBy:identity}:x));await enq(()=>aP({action:"pushVariation",voId:v.vid}))}}setSelRows(new Set());sSv(false)}}>{selRows.size} Push Selected</button>}
 </div>
 </div>
 <div className="br" style={{flexWrap:"wrap"}}>
 <div style={{display:"flex",gap:2}}>{["all","VO","DL"].map(t=><button key={t} onClick={()=>setFiltTy(t)} style={{padding:"2px 10px",borderRadius:10,border:"1px solid",borderColor:filtTy===t?"var(--ac)":"var(--bd)",background:filtTy===t?"var(--ac)":"transparent",color:filtTy===t?"#fff":"var(--t2)",fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"var(--ft)"}}>{t==="all"?"All":t}</button>)}</div>
-<div style={{display:"flex",gap:2,flexWrap:"wrap"}}>{VO_ST.map(s=>{const cnt=stCnt[s.v]||0;const isActive=voView==="status"?selectedStatusOnly===s.v:filtSt.includes(s.v);const isDisabled=voView==="status"&&selectedStatusOnly!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedStatusOnly(s.v)}else if(voView==="project"){setFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
+<div style={{display:"flex",gap:2,flexWrap:"wrap"}}>{VO_ST.map(s=>{const cnt=stCnt[s.v]||0;const isActive=voView==="status"?selectedStatusOnly===s.v:filtSt.includes(s.v);const isDisabled=voView==="status"&&selectedStatusOnly!==s.v;return<button key={s.v} disabled={isDisabled} onClick={()=>{if(voView==="home"){setVoView("status");setSelectedStatusOnly(s.v);setFiltPj("")}else if(voView==="project"){setFiltSt(p=>p.includes(s.v)?p.filter(x=>x!==s.v):[...p,s.v])}}} style={{padding:"2px 6px",borderRadius:10,border:"1px solid",borderColor:isActive?s.c:"var(--bd)",background:isActive?s.c:"transparent",color:isActive?"#fff":s.c,fontSize:8,fontWeight:600,cursor:isDisabled?"not-allowed":"pointer",opacity:isDisabled?0.3:1,fontFamily:"var(--ft)"}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 <input className="sx" placeholder="Search project or variation name" value={filtPj} onChange={e=>setFiltPj(e.target.value)}/>
 {Array.from(HIDEABLE_COLS).map(label=><label key={label} style={{display:"flex",alignItems:"center",gap:3,fontSize:9,color:"var(--t2)",cursor:"pointer",userSelect:"none"}}><input type="checkbox" checked={!hideCols.has(label)} onChange={()=>toggleHide(label)} style={{cursor:"pointer"}}/>{label}</label>)}
 {sortCol&&<span style={{fontSize:9,padding:"2px 6px",border:"1px solid var(--ac)",borderRadius:10,background:"var(--ac)",color:"#fff",display:"flex",gap:4,alignItems:"center",cursor:"pointer"}} onClick={()=>{setSortCol(null);setSortDir(null)}} title="Click to clear sort">Sort: {Object.keys(COL_FIELD).find(k=>COL_FIELD[k]===sortCol)||sortCol} {sortDir==="desc"?"▼":"▲"} ✕</span>}
@@ -451,10 +467,10 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
 
 {/* HOME VIEW: project cards grid */}
 {voView==="home"&&<div className="pj-grid">
-{filteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{vo.length===0?"No variations yet — click + Add VO above to create your first one.":"No projects match your search."}</div>:filteredCards.map(c=><div key={c.name} className="pj-card" style={{"--card-accent":stripeColor(c.projectStatus)}} onClick={()=>{setSelectedProject(c.name);setVoView("project");setFiltSt([]);setFiltTy("all")}}>
+{filteredCards.length===0?<div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--t2)"}}>{vo.length===0?"No variations yet — click + Add VO above to create your first one.":"No projects match your search."}</div>:filteredCards.map(c=><div key={c.name} className="pj-card" style={{"--card-accent":stripeColor(c.projectStatus)}} onClick={()=>{setSelectedProject(c.name);setVoView("project");setFiltSt([]);setFiltTy("all");setFiltPj("")}}>
 <div className="pjnm">{c.name}</div>
 <div className="pjmeta">{c.vos} VO{c.vos!==1?"s":""} · ${c.total.toLocaleString("en-AU",{maximumFractionDigits:0})}</div>
-<div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedProject(c.name);setVoView("project");setFiltSt([s.v]);setFiltTy("all")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
+<div className="pjcaps">{VO_ST.map(s=>{const cnt=c.statusCounts[s.v]||0;return<button key={s.v} className={"pjcap"+(cnt===0?" zero":"")} style={{borderColor:s.c,color:s.c,background:cnt===0?"transparent":s.c+"15"}} onClick={e=>{e.stopPropagation();setSelectedProject(c.name);setVoView("project");setFiltSt([s.v]);setFiltTy("all");setFiltPj("")}}>{s.v==="(blank)"?"No Status":s.v.split(" - ")[0].split(" ").slice(0,2).join(" ")} ({cnt})</button>})}</div>
 </div>)}
 </div>}
 
@@ -468,46 +484,46 @@ return<div className="app" onClick={e=>{if(e.target.closest('button,input,select
   const isSorted=fld&&sortCol===fld;
   const arrow=isSorted?(sortDir==="asc"?" ▲":" ▼"):"";
   const stickyLeft=ci<8?Array.from({length:ci}).reduce((a,_,k)=>a+eW(k),0):0;
-  return <th key={h+ci} className={ci<2?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} onClick={()=>cycleSort(fld)} style={{width:eW(ci),minWidth:30,cursor:fld?"pointer":"default",userSelect:"none",...(ci<8?{position:"sticky",left:stickyLeft,zIndex:5,background:ci<2?"#fff":ci<12?"#eef9f3":ci<15?"#fdf3e9":"#f3eefb"}:{}),borderRight:ci===7?"2px solid var(--bd)":undefined}}>{h==="☐"?<input type="checkbox" checked={voFilt.length>0&&voFilt.every(v2=>selRows.has(v2._r))} onChange={e=>{if(e.target.checked){const n=new Set(selRows);voFilt.forEach(v2=>n.add(v2._r));setSelRows(n)}else{setSelRows(new Set())}}} style={{cursor:"pointer"}}/>:<>{h}{arrow}</>}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/>}</th>
+  return <th key={h+ci} className={ci<2?"":ci<12?"tg":ci<15?"ty":ci<20?"tp":"tg"} onClick={()=>cycleSort(fld)} style={{width:eW(ci),minWidth:30,cursor:fld?"pointer":"default",userSelect:"none",...(ci<8?{position:"sticky",left:stickyLeft,zIndex:5,background:ci<2?"#fff":ci<12?"#eef9f3":ci<15?"#fdf3e9":"#f3eefb"}:{}),borderRight:ci===7?"2px solid var(--bd)":undefined}}>{h==="☐"?<input type="checkbox" checked={voFilt.length>0&&voFilt.every(v2=>selRows.has(v2.vid))} onChange={e=>{if(e.target.checked){const n=new Set(selRows);voFilt.forEach(v2=>n.add(v2.vid));setSelRows(n)}else{setSelRows(new Set())}}} style={{cursor:"pointer"}}/>:<>{h}{arrow}</>}{ci>0&&<div className="col-resize" onMouseDown={e=>{e.stopPropagation();startResize(ci,e)}}/>}</th>
 })}
 </tr></thead><tbody>
 {voFilt.length===0?<tr><td colSpan={23} style={{textAlign:"center",padding:20,color:"var(--t2)"}}>No entries.</td></tr>:
-voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="#fff";const hA=hideCols.has("Area on Job"),hC=hideCols.has("Claim %");const w=(i)=>(i===3&&hA)?0:colW[i];return<tr key={v.i} style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving... please wait before editing":editTip(v.eb,v.ea)}>
+voFilt.map((v,vi)=>{const mg=v.pr-v.em-v.pf;const rc=voRowColor(v.st);const bg="#fff";const hA=hideCols.has("Area on Job"),hC=hideCols.has("Claim %");const w=(i)=>(i===3&&hA)?0:colW[i];return<tr key={v.vid||v.i} style={{color:rc,opacity:v._pending?0.55:1}} title={v._pending?"Saving... please wait before editing":editTip(v.eb,v.ea)}>
 <td style={{textAlign:"center",padding:0,width:24,position:"sticky",left:0,zIndex:2,background:bg}}><button onClick={()=>dVO(v)} style={{background:"none",border:"none",color:"var(--rd)",cursor:"pointer",fontSize:14,fontWeight:700,opacity:.4}} onMouseEnter={e=>e.target.style.opacity=1} onMouseLeave={e=>e.target.style.opacity=.4} title="Delete">×</button></td>
-<td style={{textAlign:"center",padding:0,position:"sticky",left:w(0),zIndex:2,background:bg}}><input type="checkbox" checked={selRows.has(v._r)} onChange={e=>{const n=new Set(selRows);if(e.target.checked)n.add(v._r);else n.delete(v._r);setSelRows(n)}} style={{cursor:"pointer"}}/></td>
-<td style={{position:"sticky",left:w(0)+w(1),zIndex:2,background:bg}}><DebInput list="vo-projects-list" value={v.pj} onSave={val=>uV(v.i,"pj",val)} style={{color:rc,width:"100%"}}/></td>
-{!hA&&<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg}}><DebInput value={v.area||""} onSave={val=>uV(v.i,"area",val)} style={{color:rc,width:"100%"}}/></td>}
-<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3),zIndex:2,background:bg}}><select value={v.ty} onChange={e=>uV(v.i,"ty",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,width:"100%"}}><option>VO</option><option>DL</option></select></td>
-<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4),zIndex:2,background:bg}}><DebInput value={v.vn} onSave={val=>uV(v.i,"vn",val)} style={{color:rc}}/></td>
-<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5),zIndex:2,background:bg}}><DebInput value={v.srn||""} onSave={val=>uV(v.i,"srn",val)} style={{color:rc}}/></td>
-<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5)+w(6),zIndex:2,borderRight:"2px solid var(--bd)",background:bg}}><DebInput value={v.vnm} onSave={val=>uV(v.i,"vnm",val)} maxLen={100} style={{color:rc}}/></td>
-<td><DebInput value={v.ds} onSave={val=>uV(v.i,"ds",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc}}/></td>
-<td><DebInput value={v.da} onSave={val=>uV(v.i,"da",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc}}/></td>
-<td style={{textAlign:"right"}}><EC value={v.pr} onChange={val=>uV(v.i,"pr",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
-{!hC&&<td><DebInput value={v.claim||""} onSave={val=>uV(v.i,"claim",val)} style={{color:rc,width:"100%"}}/></td>}
-<td><select value={v.st} onChange={e=>uV(v.i,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,fontWeight:600,width:"100%"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
-<td style={{textAlign:"right"}}><EC value={v.em} onChange={val=>uV(v.i,"em",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
-<td style={{textAlign:"right"}}><EC value={v.pf} onChange={val=>uV(v.i,"pf",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
+<td style={{textAlign:"center",padding:0,position:"sticky",left:w(0),zIndex:2,background:bg}}><input type="checkbox" checked={selRows.has(v.vid)} onChange={e=>{const n=new Set(selRows);if(e.target.checked)n.add(v.vid);else n.delete(v.vid);setSelRows(n)}} style={{cursor:"pointer"}}/></td>
+<td style={{position:"sticky",left:w(0)+w(1),zIndex:2,background:bg}}><DebInput list="vo-projects-list" value={v.pj} onSave={val=>uV(v.vid,"pj",val)} style={{color:rc,width:"100%"}}/></td>
+{!hA&&<td style={{position:"sticky",left:w(0)+w(1)+w(2),zIndex:2,background:bg}}><DebInput value={v.area||""} onSave={val=>uV(v.vid,"area",val)} style={{color:rc,width:"100%"}}/></td>}
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3),zIndex:2,background:bg}}><select value={v.ty} onChange={e=>uV(v.vid,"ty",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,width:"100%",textAlign:"center"}}><option>VO</option><option>DL</option></select></td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4),zIndex:2,background:bg}}><DebInput value={v.vn} onSave={val=>uV(v.vid,"vn",val)} style={{color:rc}}/></td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5),zIndex:2,background:bg}}><DebInput value={v.srn||""} onSave={val=>uV(v.vid,"srn",val)} style={{color:rc}}/></td>
+<td style={{position:"sticky",left:w(0)+w(1)+w(2)+w(3)+w(4)+w(5)+w(6),zIndex:2,borderRight:"2px solid var(--bd)",background:bg}}><DebInput value={v.vnm} onSave={val=>uV(v.vid,"vnm",val)} maxLen={100} style={{color:rc}}/></td>
+<td><DebInput value={v.ds} onSave={val=>uV(v.vid,"ds",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc,textAlign:"center"}}/></td>
+<td><DebInput value={v.da} onSave={val=>uV(v.vid,"da",val)} format={fmD} placeholder="dd-mm-yy" style={{color:rc,textAlign:"center"}}/></td>
+<td style={{textAlign:"right"}}><EC value={v.pr} onChange={val=>uV(v.vid,"pr",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
+{!hC&&<td><DebInput value={v.claim||""} onSave={val=>uV(v.vid,"claim",val)} style={{color:rc,width:"100%"}}/></td>}
+<td><select value={v.st} onChange={e=>uV(v.vid,"st",e.target.value)} style={{background:"transparent",border:"none",color:rc,fontSize:10,fontWeight:600,width:"100%"}}><option value="">—</option>{VO_ST.map(s=><option key={s.v} value={s.v}>{s.v}</option>)}</select></td>
+<td style={{textAlign:"right"}}><EC value={v.em} onChange={val=>uV(v.vid,"em",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
+<td style={{textAlign:"right"}}><EC value={v.pf} onChange={val=>uV(v.vid,"pf",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
 <td style={{textAlign:"right",color:rc,fontFamily:"var(--mn)"}}>{mg?fmP(mg):""}</td>
-<td style={{textAlign:"right"}}><EC value={v.nmn} onChange={val=>uV(v.i,"nmn",val)} cls="cl" style={{color:rc}} fmt={fmN}/></td>
-<td style={{textAlign:"right"}}><EC value={v.nh} onChange={val=>uV(v.i,"nh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
-<td style={{textAlign:"right"}}><EC value={v.nr} onChange={val=>uV(v.i,"nr",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
-<td style={{textAlign:"right"}}><EC value={v.oh} onChange={val=>uV(v.i,"oh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
-<td style={{textAlign:"right"}}><EC value={v.or2} onChange={val=>uV(v.i,"or2",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
-<td style={{textAlign:"center"}} onClick={()=>{setNoteEdit(v.i);setNoteText(v.notes||"")}}>{v.notes?<span title={v.notes} style={{cursor:"pointer",fontSize:14}}>💬</span>:<span style={{cursor:"pointer",color:"var(--t2)",fontSize:12}}>+</span>}</td>
+<td style={{textAlign:"center"}}><EC value={v.nmn} onChange={val=>uV(v.vid,"nmn",val)} cls="cl" style={{color:rc,textAlign:"center"}} fmt={fmN}/></td>
+<td style={{textAlign:"right"}}><EC value={v.nh} onChange={val=>uV(v.vid,"nh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
+<td style={{textAlign:"right"}}><EC value={v.nr} onChange={val=>uV(v.vid,"nr",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
+<td style={{textAlign:"right"}}><EC value={v.oh} onChange={val=>uV(v.vid,"oh",val)} cls="cl" style={{color:rc}} fmt={fm2}/></td>
+<td style={{textAlign:"right"}}><EC value={v.or2} onChange={val=>uV(v.vid,"or2",val)} cls="cl" style={{color:rc}} fmt={fmP}/></td>
+<td style={{textAlign:"center"}} onClick={()=>{setNoteEdit(v.vid);setNoteText(v.notes||"")}}>{v.notes?<span title={v.notes} style={{cursor:"pointer",fontSize:14}}>💬</span>:<span style={{cursor:"pointer",color:"var(--t2)",fontSize:12}}>+</span>}</td>
 <td style={{textAlign:"center"}}>{!v.pushedAt?<button className="push-btn" onClick={()=>pushVO(v)} style={{background:"var(--gn)"}} title="Draft — not yet pushed">Push</button>:<span style={{fontSize:9,color:"var(--t2)",cursor:"help"}} title={"Pushed by "+(v.pushedBy||"?")+" · "+fmEdAt(v.pushedAt)+" — edits now flow live"}>Pushed {fmD(v.pushedAt)}</span>}</td>
 </tr>})}
 </tbody></table></div></div>}
 
 {/* Notes modal */}
-{noteEdit!==null&&<div className="notes-modal" onClick={()=>setNoteEdit(null)}>
+{noteEdit!==null&&(()=>{const ne=vo.find(x=>x.vid===noteEdit);return<div className="notes-modal" onClick={()=>setNoteEdit(null)}>
 <div className="notes-box" onClick={e=>e.stopPropagation()}>
-<h4>Notes — {vo[noteEdit]?.vnm||vo[noteEdit]?.pj||"Entry"}</h4>
+<h4>Notes — {ne?.vnm||ne?.pj||"Entry"}</h4>
 <textarea value={noteText} onChange={e=>setNoteText(e.target.value)} autoFocus placeholder="Type notes here..."/>
 <div className="nbtn">
 <button className="pl" onClick={()=>setNoteEdit(null)}>Cancel</button>
 <button className="pl gn" onClick={()=>{uV(noteEdit,"notes",noteText);setNoteEdit(null)}}>Save</button>
-</div></div></div>}
+</div></div></div>})()}
 </>}
 {selCells.length>0&&<div className="stat-bar" onClick={clearSel}>
 <span className="stat-lbl">Click to clear · {selCells.length} cell{selCells.length>1?"s":""}</span>
